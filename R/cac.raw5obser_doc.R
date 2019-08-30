@@ -1,0 +1,20 @@
+#' Scores assigned by 5 observers to 20 experimental units.
+#' 
+#' This dataset contains data from a reliability experiment where 5 observers scored 15 units on a 4-point numeric scale 
+#' based on the values 0, 1, 2 and 3.  
+#' 
+#' @format This dataset has 15 rows (for the 15 subjects) and 6 columns. Only the last 5 columns associated with the 5
+#' observers are used in the calculations. Of the 5 observers, only observer 3 scored all 15 units. Therefore, some missing
+#' ratings in the form of "NA" appear in the columns associated with the remaining 4 observers.
+#'  \describe{
+#'     \item{Unit}{This variable repsents the unit number.}
+#'     \item{Observer1}{All ratings from Observer 1}
+#'     \item{Observer2}{All ratings from Observer 2}
+#'     \item{Observer3}{All ratings from Observer 3}
+#'     \item{Observer4}{All ratings from Observer 4}
+#'     \item{Observer5}{All ratings from Observer 5}
+#'  }   
+#'  
+#' @source Gwet, K.L. (2014) \emph{Handbook of Inter-Rater Reliability}, 4th Edition. Advanced Analytics, LLC. 
+#' \emph{A larger version of this table can be found on page #125}
+"cac.raw5obser"

@@ -1,0 +1,13 @@
+Group,Units,Ben,Gerry
+G1,1,a,b
+G2,2,a,a
+G1,3,b,b
+G1,4,b,b
+G1,5,d,b
+G2,6,c,c
+G1,7,c,c
+G2,8,c,c
+G2,9,e,e
+G1,10,d,
+G1,11,d,d
+G2,12,a,d

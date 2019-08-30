@@ -1,0 +1,22 @@
+#' Dataset of raw ratings from 4 Raters on 14 Subjects that belong to 2 groups named "G1" and "G2"
+#' 
+#' This dataset contains data from a reliability experiment where 4 raters identified as Rater1, Rater2, Rater3 and Rater4
+#' scored 14 units on a 5-point alphabetical scale based on the values a, b, c, d and e. These 14 units are allocated to 
+#' 2 groups named G1 and G2.  
+#' 
+#' @format This dataset contains ratings obtained from an experiment where 4 raters classified 14 subjects into 5 
+#' possible categories labeled as a, b, c, d, and e. None of the 4 raters scored all 14 units. Therefore, 
+#' some missing ratings appear in each of the columns associated with the 4 raters.
+#' 
+#' Note that only the the 4 last columns are to be used with the functions included in this package.  The first 2
+#' columns only play a descriptive role and are not used in any calculation.
+#'  \describe{
+#'     \item{Group}{This variable repsents the unit number.}
+#'     \item{Units}{This variable repsents the unit number.}
+#'     \item{Rater1}{All ratings from rater 1}
+#'     \item{Rater2}{All ratings from rater 2}
+#'     \item{Rater3}{All ratings from rater 3}
+#'     \item{Rater4}{All ratings from rater 4}
+#'  }   
+#'  
+"cac.raw.g1g2"

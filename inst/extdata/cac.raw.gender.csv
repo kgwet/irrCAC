@@ -1,0 +1,16 @@
+Group,RaterA,RaterB,RaterC,RaterD
+MALE,a,a,a,c
+MALE,a,a,b,c
+MALE,a,a,b,c
+MALE,a,a,c,c
+MALE,a,b,a,a
+MALE,b,a,a,a
+MALE,b,b,b,b
+MALE,b,c,b,b
+MALE,c,c,c,c
+FEMALE,a,a,a,c
+FEMALE,a,a,b,c
+FEMALE,a,a,b,c
+FEMALE,a,a,c,c
+FEMALE,a,b,a,a
+FEMALE,b,a,a,a

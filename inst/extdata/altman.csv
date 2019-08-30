@@ -1,0 +1,6 @@
+lb.AL,ub.AL,interp.AL
+0.8,1,Very Good
+0.6,0.8,Good
+0.4,0.6,Moderate
+0.2,0.4,Fair
+-1,0.2,Poor

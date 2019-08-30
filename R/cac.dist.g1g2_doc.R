@@ -1,0 +1,24 @@
+#' Distribution of 4 raters by subject and by category, for 14 Subjects that belong to 2 groups "G1" and "G2"
+#' 
+#' This dataset contains rating data in the form of a subject-level distribution of 4 raters by category the subject
+#' was classified into. A total of 4 raters had to classify 14 subjects into one of 5 categories "a", "b", "c", "d", and "e". 
+#' This dataset is different version of the more detailed cac.raw.g1g2 dataset. While cac.raw.g1g2 tells you
+#' about the exact category into which each rater classified all subjects, cac.dist.g1g2 on the other hand, can only tell 
+#' you how many raters classified a given subject into a particular category.
+#' @usage cac.dist.g1g2[,3:6]
+#' @format This dataset contains ratings obtained from an experiment where 4 raters classified 14 subjects into 5 
+#' possible categories labeled as a, b, c, d, and e. None of the 4 raters scored all 14 units. Therefore, 
+#' some missing ratings appear in each of the columns associated with the 4 raters.
+#' 
+#' Note that only the the 4 last columns are to be used with the functions included in this package.  The first 2
+#' columns only play a descriptive role and are not used in any calculation.
+#'  \describe{
+#'     \item{Group}{This variable represents the group name.}
+#'     \item{Units}{This variable represents the unit number.}
+#'     \item{a}{Number of raters who classified the subject represented by the row into category "a"}
+#'     \item{b}{Number of raters who classified the subject represented by the row into category "b"}
+#'     \item{c}{Number of raters who classified the subject represented by the row into category "c"}
+#'     \item{d}{Number of raters who classified the subject represented by the row into category "d"}
+#'     \item{e}{Number of raters who classified the subject represented by the row into category "e"}
+#'  }   
+"cac.dist.g1g2"

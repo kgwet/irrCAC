@@ -1,0 +1,15 @@
+Group,Units,Rater1,Rater2,Rater3,Rater4
+G2,1,a,a,,a
+G1,2,b,b,c,b
+G2,3,c,c,c,c
+G1,4,c,c,c,c
+G1,5,b,b,b,b
+G1,6,a,b,c,d
+G2,7,d,d,d,d
+G1,8,a,a,b,a
+G2,9,b,b,b,b
+G2,10,    ,e,e,e
+G1,11,  ,,a,a
+G1,12,  ,,c,
+G2,13,b,b,c,b
+G2,14,b,a,c,b
