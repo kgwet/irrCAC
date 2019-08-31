@@ -36,6 +36,7 @@
 #' calculations.
 #' @param conflev An optional parameter representing the confidence level associated with the confidence interval. Its default value is 0.95.
 #' @param N An optional parameter representing the population size (if any). It may be use to perform the final population correction to the variance.  Its default value is infinity. 
+#' @importFrom stats pt qt
 #' @return A data list containing 3 objects: (1) a one-row data frame containing the estimates, (2) the weight matrix 
 #' used in the calculations, and (3) the categories used in the analysis.  The data frame of estimates contains the 
 #' following variables "coeff.name" (coefficient name), "pa" (the percent agreement), "pe" (percent chance-agreement-always equals 0),

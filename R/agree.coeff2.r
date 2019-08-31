@@ -15,6 +15,9 @@
 #' Kappa coefficient for 2 raters
 #' @param ratings A square table of ratings (assume no missing ratings).
 #' @param weights An optional matrix that contains the weights used in the weighted analysis.
+#' @param conflev An optional confidence level for confidence intervals. The default value is the traditional 0.95.
+#' @param N An optional population size.  The default value is infinity.
+#' @importFrom stats pt qt
 #' @return A data frame containing the following 5 variables: coeff.name coeff.val coeff.se coeff.ci coeff.pval.
 #' @export
 kappa2.table <- function(ratings,weights = identity.weights(1:ncol(ratings)),conflev=0.95,N=Inf){

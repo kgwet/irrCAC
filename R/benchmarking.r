@@ -6,6 +6,7 @@
 #'    information. The 3 columns are the interval lower bound, upper bound, and their interpretation. The default value 
 #'    is a small file contained in the package and named \emph{altman.RData}, which describes the official Altman's 
 #'    scale intervals and their interpretation. 
+#' @importFrom stats na.omit pnorm
 #' @return A one-column matrix containing the membership probabilities (c.f. \url{http://agreestat.com/research_papers/inter-rater\%20reliability\%20study\%20design1.pdf}) 
 #' @export
 altman.bf <- function(coeff,se,BenchDF=altman){

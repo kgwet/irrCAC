@@ -29,6 +29,7 @@
 #' some categories were not used by any rater inspite of being available to the raters. 
 #' @param conflev An optional parameter representing the confidence level associated with the confidence interval. Its default value is 0.95.
 #' @param N An optional parameter representing the population size (if any). It may be use to perform the final population correction to the variance.  Its default value is infinity. 
+#' @importFrom stats pt qt
 #' @return A vector containing the following information: pa(the percent agreement),pe(the percent chance agreement),
 #' coeff(Gwet's AC1 or AC2 dependending on whether weights are used or not),stderr(the standard error of Gwet's coefficient),
 #' conf.int(the confidence interval of Gwet's coefficient), p.value(the p-value of Gwet's coefficient),coeff.name (AC1/AC2).

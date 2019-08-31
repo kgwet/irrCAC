@@ -12,10 +12,10 @@
     \item{Gerry}{Gerry's Ratings}
  }   
 The first 2 columns "Group" and "Units" play a descriptive role here and are not used by any fucntion included in this
-package. One will typically use \code{cac.ben.gerry[,c(3,4)]} or \code{cac.ben.gerry[,c("Ben","Gerry")]} as input 
+package. One will typically use cac.ben.gerry[,c(3,4)] or cac.ben.gerry[,c("Ben","Gerry")] as input 
 dataset.}
 \usage{
-cac.ben.gerry[,c(3,4)] or cac.ben.gerry[,c("Ben","Gerry")]
+cac.ben.gerry
 }
 \description{
 This dataset contains ratings that 2 raters named Ben and Gerry assigned to 12 units distributed in 2 groups 

@@ -1,0 +1,1 @@
+utils::globalVariables(c("altman", "fleiss", "landis.koch"))

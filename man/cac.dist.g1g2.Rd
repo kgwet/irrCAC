@@ -20,13 +20,13 @@ columns only play a descriptive role and are not used in any calculation.
     \item{e}{Number of raters who classified the subject represented by the row into category "e"}
  }}
 \usage{
-cac.raw.g1g2[,3:6]
+cac.dist.g1g2
 }
 \description{
 This dataset contains rating data in the form of a subject-level distribution of 4 raters by category the subject
 was classified into. A total of 4 raters had to classify 14 subjects into one of 5 categories "a", "b", "c", "d", and "e". 
-This dataset is different version of the more detailed \code{cac.raw.g1g2} dataset. While \code{cac.raw.g1g2} tells you
-about the exact category into which each rater classified all subjects, \code{cac.dist.g1g2} on the other hand, can only tell 
+This dataset is different version of the more detailed "cac.raw.g1g2" dataset. While "cac.raw.g1g2" tells you
+about the exact category into which each rater classified all subjects, "cac.dist.g1g2" on the other hand, can only tell 
 you how many raters classified a given subject into a particular category.
 }
 \keyword{datasets}

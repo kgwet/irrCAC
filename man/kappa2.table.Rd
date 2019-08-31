@@ -11,6 +11,10 @@ kappa2.table(ratings, weights = identity.weights(1:ncol(ratings)),
 \item{ratings}{A square table of ratings (assume no missing ratings).}
 
 \item{weights}{An optional matrix that contains the weights used in the weighted analysis.}
+
+\item{conflev}{An optional confidence level for confidence intervals. The default value is the traditional 0.95.}
+
+\item{N}{An optional population size.  The default value is infinity.}
 }
 \value{
 A data frame containing the following 5 variables: coeff.name coeff.val coeff.se coeff.ci coeff.pval.
