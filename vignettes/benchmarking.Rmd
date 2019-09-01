@@ -20,7 +20,7 @@ library(irrCAC)
 
 # Abstract
 
-The **irrCAC** is an R package that provides several functions for calculating various chance-corrected agreement coefficients (see [1.overview.html](1.overview.html) for ageneral overview), their weighted versions using various weights (see [2.weighting.html](2.weighting.html) for a more detailed discusssion on the weighting of agreement coefficients). In this document, I like to show you how you would implement the benchmarking approach discussed in chapter 6 of Gwet (2014). This package closely follows the general framework of inter-rater reliability assessment presented by Gwet (2014).
+The **irrCAC** is an R package that provides several functions for calculating various chance-corrected agreement coefficients (see [overview.html](overview.html) for ageneral overview), their weighted versions using various weights (see [weighting.html](weighting.html) for a more detailed discusssion on the weighting of agreement coefficients). In this document, I like to show you how you would implement the benchmarking approach discussed in chapter 6 of Gwet (2014). This package closely follows the general framework of inter-rater reliability assessment presented by Gwet (2014).
 
 In a nutshell, the problem consists of qualifying the magnitude of a given agreement coeffficient as *poor*, *good*, *very good*, or something else.  There are essentially 3 bechmarking scales that have been mentioned in the inter-rater reliability, and which are covered in this package. These are the **Landis-Koch**, **Altman**, and **Fleiss** bechmarking scales defined as follows:
 ```{r}

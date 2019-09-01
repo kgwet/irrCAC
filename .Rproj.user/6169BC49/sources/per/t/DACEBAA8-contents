@@ -1,0 +1,3600 @@
+# server.R
+
+#library(metricsgraphics)
+
+#install.packages("devtools")
+#install.packages("formattable")
+library(tidyverse)
+library(formattable)
+library(devtools)
+library(grid)
+library(gridExtra)
+library(gtable)
+#install_github("kgwet/irrCAC")
+library(irrCAC)
+library(irrICC)
+
+###source_url("https://raw.github.com/kgwet/irrCAC/R/bingSearchXScraper.R")
+###install_github("kgwet/irrCAC",force=TRUE)
+
+options(shiny.maxRequestSize = 9*1024^2)
+
+# DF = as.data.frame(matrix(0,10,9))
+# colnames(DF)=LETTERS[1:9]
+
+coeff.cols <- c("method","coeff","stderr","conf.interv", "p.value")
+coeff.names <- c("Kappa","AC1","Scott","Alpha","B-P","Percent")
+
+
+shinyServer(
+  function(input, output, session) {
+    coeff.select2C <- reactive(c(input$chkkappa2RC,input$chkac12RC,input$chkpi2RC,input$chkalpha2RC,input$chkkbp2RC,input$chkpct2RC))
+    coeff.select2R <- reactive(c(input$chkkappa2RR,input$chkac12RR,input$chkpi2RR,input$chkalpha2RR,input$chkkbp2RR,input$chkpct2RR))
+    coeff.select3R <- reactive(c(input$chkkappa3RR,input$chkac13RR,input$chkpi3RR,input$chkalpha3RR,input$chkkbp3RR,input$chkpct3RR))
+    coeff.select3D <- reactive(c(input$chkkappa3RD,input$chkac13RD,input$chkpi3RD,input$chkalpha3RD,input$chkkbp3RD,input$chkpct3RD))
+
+    format.estim <- function(df,cl){
+      df$coeff <- format(df$coeff,digits=3)
+      df$stderr <- formatC(df$stderr,format="f",digits=3)
+      df$p.value <- formatC(df$p.value,format="e",digits=3)
+      colnames(df) <- c("Method", "Coeff", "StdErr",paste0(cl,"% C.I."),"P-Value")
+    }
+
+    # The benchmark.table() function creates the benchmark table
+    benchmark.table <- function(coeffs.table,CAC.type){
+      coeff.est <- as.numeric(as.vector(unlist(coeffs.table[2])))
+      stderr.est <- as.numeric(as.vector(unlist(coeffs.table[3])))
+      switch(CAC.type,
+         "2C"={
+           bench.select <- isolate(input$optbench)
+           coeff.select <- coeff.select2C()
+         },
+         "2R"={
+           bench.select <- isolate(input$optbench2RR)
+           coeff.select <- coeff.select2R()
+         },
+         "3R"={
+           bench.select <- isolate(input$optbench3RR)
+           coeff.select <- coeff.select3R()
+         },
+         "3D"={
+           bench.select <- isolate(input$optbench3RD)
+           coeff.select <- coeff.select3D()
+         }
+      )
+      switch (bench.select,
+          lk = {
+            # Landis-Koch Benchmarking
+            k <- 0
+            for (i in 1:length(coeff.select)){
+              if (coeff.select[i]){
+                k <- k + 1
+                if (k==1) DFR <- as.data.frame(landis.koch.bf(coeff.est[k],stderr.est[k],landis.koch))
+                else DFR <- cbind(DFR,as.data.frame(landis.koch.bf(coeff.est[k],stderr.est[k],landis.koch))$CumProb)
+              }
+            }
+          },
+          altman = {
+            # Altman Benchmarking
+            k <- 0
+            for (i in 1:length(coeff.select)){
+              if (coeff.select[i]){
+                k <- k+1
+                if (k==1) DFR <- as.data.frame(altman.bf(coeff.est[k],stderr.est[k],altman))
+                else DFR <- cbind(DFR,as.data.frame(altman.bf(coeff.est[k],stderr.est[k],altman))$CumProb)
+              }
+            }
+          },
+          fleiss = {
+            # Fleiss Benchmarking
+            k <- 0
+            for (i in 1:length(coeff.select)){
+              if (coeff.select[i]){
+                k <- k+1
+                if (k==1) DFR <- as.data.frame(fleiss.bf(coeff.est[k],stderr.est[k],fleiss))
+                else DFR <- cbind(DFR,as.data.frame(fleiss.bf(coeff.est[k],stderr.est[k],fleiss))$CumProb)
+              }
+            }
+          }
+      )
+      colnames(DFR) <- c("Interpretation",coeff.names[coeff.select==TRUE])
+      return(DFR)
+    } # End of function benchmark.table
+
+
+    bench.request <- reactiveValues(BR=FALSE) # This reactive object stores the reactive value bench.request$BR that will become TRUE as soon as the first benchmarking is placed.
+                                              # This is needed to improve the app's functionality.
+    bench.request.w <- reactiveValues(WBR=FALSE) # Equivalent of bench.request for weighted coefficients
+
+    #  -------------------------------------------------------------------
+    #- Data capture for contingency table analysis / data supplied by user
+    #  -------------------------------------------------------------------
+
+    # reset the external file used to import data into the contingency table
+    observeEvent(input$Reset2Cont,{
+      reset("f2RCont")
+    })
+
+    # Importing external data into the contingency table
+    dfra <- reactiveValues(data=NULL)
+    cnames2RC <- reactiveValues(cols=NULL)
+    output$gridFile2RC = renderRHandsontable({
+        inFile <- input$f2RCont
+        if (is.null(inFile)) {return(NULL)}
+        if (isolate(input$ftype2RC)=='csv') DF <- read.csv(inFile$datapath, header = FALSE,sep = input$sep, quote = input$quote)
+        else DF <- read_excel(inFile$datapath)
+        dfra$data <- DF
+        cnames2RC$cols <- colnames(DF)
+        updateTextInput(session, inputId="ti.clabels2RC", label = NULL,
+                        value = colnames(DF)[1:input$qCateg])
+        rhandsontable(DF, selectCallback = TRUE,width=350,height = 450,useTypes = FALSE,
+                      rowHeaders = TRUE) %>% hot_context_menu(allowColEdit = TRUE)
+    })
+    observeEvent(input$f2RCont,{
+      output$copypaste2RC <- renderUI(
+        actionButton("abPopSel2RC",HTML("Highlight your data below & click here to <br> populate the cells above"),width = '300px')
+      )
+    })
+    observeEvent(input$gridFile2RC, { #This is necessary to update the table in realtime
+      dfra$data <- hot_to_r(input$gridFile2RC)
+    })
+
+    qCateg <- reactive(input$qCateg)
+    nijMat.f <- function(iMin,jMin,iMax,jMax){
+      SelData <-matrix(0,iMax-iMin+1,jMax-jMin+1)
+      for (i in iMin:iMax){
+        for (j in jMin:jMax){
+          SelData[i-iMin+1,j-jMin+1] <- input$gridFile2RC_select$data[[i]][[j]]
+        }
+      }
+      return(SelData)
+    }
+    PopulateConTable.f <- function(RatingsMat){
+      nb.rows <- nrow(RatingsMat)
+      nb.cols <- ncol(RatingsMat)
+      for (i in 1:as.numeric(qCateg())){
+        for (j in 1:as.numeric(qCateg())){
+          if (i<=nb.rows & j<=nb.cols){
+            updateTextInput(session,paste0("Cells2C",i,j), label = NULL,value = RatingsMat[i,j])
+          }else{
+            updateTextInput(session,paste0("Cells2C",i,j), label = NULL,value = "0")
+          }
+        }
+      }
+    }
+    min <- reactiveValues(i=1,j=1)
+    max <- reactiveValues(i=1,j=1)
+
+    observeEvent(input$abPopSel2RC,{
+      min$i <- input$gridFile2RC_select$select$r
+      min$j <- input$gridFile2RC_select$select$c
+      max$i <- input$gridFile2RC_select$select$r2
+      max$j <- input$gridFile2RC_select$select$c2
+      if (!is.null(min$i)){
+        PopulateConTable.f(nijMat.f(min$i,min$j,max$i,max$j))
+        cnames2RC$cols <- colnames(dfra$data)[min$j:max$j]
+        updateTextInput(session, inputId="ti.clabels2RC", label = NULL, value = cnames2RC$cols[1:input$qCateg])
+      }
+    })
+    observe({
+      if (!is.null(dfra$data)){
+        PopulateConTable.f(dfra$data[1:input$qCateg,1:input$qCateg])
+      }
+    })
+
+    shinyjs::disable("chkpct2RC") # disable checkbox of percent agreement
+
+    #- User-defined function to read the contingency table of ratings
+    read.ratings <- function(q){
+      nkl.mat <- matrix(0,q,q)
+      for (k in 1:q){
+        for (l in 1:q){
+          nkl.mat[k,l] <- as.numeric(input[[paste0('Cells2C',k,l)]])
+        }
+      }
+      nkl.mat
+    }
+
+#    read.ratings <- function(q){
+#      nkl.mat <- matrix(0,q,q)
+#      lapply(1:q,function(k){
+#        lapply(1:q,function(l){
+#          nkl.mat[k,l] <- as.numeric(input[[paste0('Cells2C',k,l)]])
+#        })
+#      })
+#      nkl.mat
+#    }
+
+    #- User-defined function to read the contingency table of custom weights
+
+    read.cweights <- function(catego.vec){
+      q <- length(catego.vec)
+      nkl.mat <- matrix(0,q,q)
+      for (k in 1:q){
+        for (l in 1:q){
+          nkl.mat[k,l] <- as.numeric(input[[paste0('wCells2C',k,l)]])
+        }
+      }
+      nkl.mat
+    }
+
+    # Function to generate the appropriate weights for the weighted analysis
+
+    Weights2C.f <-function(){
+      if (input$chkweighted2RC==TRUE){
+        if (input$optWtype2RC=="predw"){
+          switch(input$optweights2RC,
+                 quaw={
+                   weight.tit <-"Quadratic Weights"
+                   weight.mat <- quadratic.weights(1:input$qCateg)
+                 },
+                 linw={
+                   weight.tit <-"Linear Weights"
+                   weight.mat <- linear.weights(1:input$qCateg)
+                 },
+                 radw={
+                   weight.tit <-"Radical Weights"
+                   weight.mat <- radical.weights(1:input$qCateg)
+                 },
+                 ordw={
+                   weight.tit <-"Ordinal Weights"
+                   weight.mat <- ordinal.weights(1:input$qCateg)
+                 },
+                 ratw={
+                   weight.tit <-"Ratio Weights"
+                   weight.mat <- ratio.weights(1:input$qCateg)
+                 },
+                 cirw={
+                   weight.tit <-"Circular Weights"
+                   weight.mat <- circular.weights(1:input$qCateg)
+                 },
+                 bipw={
+                   weight.tit <-"Bipolar Weights"
+                   weight.mat <- bipolar.weights(1:input$qCateg)
+                 }
+          )#switch
+        }else { # these are custom weights
+          weight.tit <- "Custom Weights"
+          weight.mat <- read.cweights(1:as.numeric(input$qCateg))
+        }
+      }else{ # these are identity weights
+        weight.tit <-""
+        weight.mat <- identity.weights(1:input$qCateg)
+      }
+      return(list(wtit=weight.tit,wmat=weight.mat))
+    }
+
+    # The coefficients2C.f function returns a data frame containing all coefficients
+
+    coefficients2C.f <- function(wtmat.p){
+      coeffmat.p <- data.frame()
+      conf.lev = reactive(as.numeric(input$cmbclev2RC)/100)
+      i=1
+      if (input$chkkappa2RC==TRUE) {
+        coeffmat.p = rbind(coeffmat.p,kappa2.table(ratings=ratings.mat(),weights=wtmat.p,conflev = conf.lev()))
+        i <- i+1
+      }
+      if (input$chkac12RC==TRUE) {
+        coeffmat.p = rbind(coeffmat.p,gwet.ac1.table(ratings=ratings.mat(),weights=wtmat.p,conflev = conf.lev()))
+        i <- i+1
+      }
+      if (input$chkpi2RC==TRUE) {
+        coeffmat.p = rbind(coeffmat.p,scott2.table(ratings=ratings.mat(),weights=wtmat.p,conflev = conf.lev()))
+        i <- i+1
+      }
+      if (input$chkalpha2RC==TRUE) {
+        coeffmat.p = rbind(coeffmat.p,krippen2.table(ratings=ratings.mat(),weights=wtmat.p,conflev = conf.lev()))
+        i <- i+1
+      }
+      if (input$chkkbp2RC==TRUE) {
+        coeffmat.p = rbind(coeffmat.p,bp2.table(ratings=ratings.mat(),weights=wtmat.p,conflev = conf.lev()))
+        i <- i+1
+      }
+      coeffmat.p = rbind(coeffmat.p,pa2.table(ratings=ratings.mat(),weights=wtmat.p,conflev = conf.lev()))
+      return(coeffmat.p)
+    }
+
+    # Read ratings from the contingency table
+    ratings.mat <- eventReactive(input$cmdExecute2xC,
+                        read.ratings(as.numeric(input$qCateg))
+    )
+    # Read custom weights if supplied
+    Weights <- eventReactive(input$cmdExecute2xC,Weights2C.f()$wmat)
+
+
+    # Manage the display of the 'custom weights' tabpanel
+    #---------------------------
+    observeEvent(input$optWtype2RC,{ # hide/show custom-weight panel
+      toggle(condition = (input$optWtype2RC =='cusw' & input$chkweighted2RC==TRUE),
+             selector = "#TabsetId li a[data-value=panel4]")
+    })
+    observeEvent(input$chkweighted2RC,{
+      toggle(condition = (input$optWtype2RC =='cusw' & input$chkweighted2RC==TRUE),
+             selector = "#TabsetId li a[data-value=panel4]")
+    })
+    observeEvent(input$optWtype2RC,{ # Change the selected panel depending on the type of weights needed
+      if (input$optWtype2RC =='cusw') {
+        updateTabsetPanel(session, "TabsetId", selected = "panel4")
+      } else {
+        updateTabsetPanel(session, "TabsetId", selected = "panel2")
+      }
+    })
+    #- Compute unweighted coefficients
+    UnweightedFR <- reactive({
+      DFR <- coefficients2C.f(identity.weights(1:isolate(input$qCateg)))
+      coeff.cols[4] <- paste0(isolate(input$cmbclev2RC),"%conf.interv")
+      colnames(DFR) <- coeff.cols
+      DFR
+    })
+    Wted.frame <- reactive({
+      DFR <- coefficients2C.f(Weights())
+      coeff.cols[4] <- paste0(isolate(input$cmbclev2RC),"%conf.interv")
+      colnames(DFR) <- coeff.cols
+      DFR
+    })
+
+    #---------------------------------------------------------------------
+    #+++++> Treatment of the contingency table data previously collected #
+    #=====================================================================
+
+    isprinted <- reactiveValues(ct=NULL) # reactive value, which is NULL if no output is TRUE if there is output
+    ItemsUnweighted <- reactiveValues(tab=NULL) #ItemsUnweighted contains unweighted analysis output items to be saved as a PDF file
+    ItemsWeighted <- reactiveValues(tab=NULL) #ItemsWeighted contains weighted analysis output items to be saved as a PDF file
+
+    observe({
+      if (input$TabsetId=="panel3" & !is.null(isprinted$ct)){
+        output$Download2RC <- renderUI({downloadButton('ExportPDF2RC', 'PDF Output')})
+      }else{
+        output$Download2RC <- renderUI("") #NULL
+      }
+    })
+
+    #######  EXECUTE / Contingency Table ------------> observeEvent(input$cmdExecute2xC,{
+
+    observeEvent(input$cmdExecute2xC,{
+      ItemsUnweighted$tab <- NULL
+      ItemsWeighted$tab <- NULL
+      updateTabsetPanel(session, "TabsetId", selected = "panel3") # Once the execute button is pressed the "Output" tabpanel must be selected
+      output$titDist2C <- renderUI(HTML("<b>DISTRIBUTION OF SUBJECTS BY RATER AND CATEGORY</b>"))
+      pdftit2RC1<-textGrob("Distribution of Subjects by Rater and Category",gp=gpar(size=12,font=3))
+      pdftit2RC2<-textGrob("Inter-Rater Reliability Coefficients & Associated Precision Measures",gp=gpar(size=12,font=3))
+      output$hline2C <- renderUI(tags$hr(style="border-color: purple;"))
+      output$titCoeff <- renderUI(HTML("<b>INTER-RATER RELIABILITY COEFFICIENTS & ASSOCIATED PRECISION MEASURES</b>"))
+      output$titUnWt2C <- renderUI(HTML("<br>Unweighted Agreement Coefficients<br>"))
+
+      #--> Display input contingency table of ratings
+      DF.Out2RC <- as.data.frame(ratings.mat())
+      DF.Unweighted2RC <-as.data.frame(UnweightedFR())
+      if (!is.na(clabels()[1])){ #
+        if (length(clabels()) == input$qCateg){
+          colnames(DF.Out2RC) <- clabels()[1:length(clabels())]
+          rownames(DF.Out2RC) <- clabels()[1:length(clabels())]
+        }else{
+          colnames(DF.Out2RC) <- c(clabels()[1:length(clabels())],
+                                   unlist(lapply((length(clabels())+1):input$qCateg, function(j) {paste0("Categ",j)})))
+          rownames(DF.Out2RC) <- c(clabels()[1:length(clabels())],
+                                   unlist(lapply((length(clabels())+1):input$qCateg, function(j) {paste0("Categ",j)})))
+        }
+      }else{
+        colnames(DF.Out2RC) <- unlist(lapply(1:input$qCateg, function(j) {paste0("Categ",j)}))
+        rownames(DF.Out2RC) <- unlist(lapply(1:input$qCateg, function(j) {paste0("Categ",j)}))
+      }
+      # Display the input contingency table ,rownames = TRUE
+      output$gridCont2RC = renderTable(DF.Out2RC,rownames = TRUE,bordered = TRUE,spacing = 'xs',digits = 0)
+      isprinted$ct<-TRUE
+      ItemsUnweighted$tab <- "pdftit2RC1,tableGrob(DF.Out2RC)"
+
+      # Computing the selected agreement coefficients & their standard errors
+      DF.Unweighted2RC$coeff <- format(DF.Unweighted2RC$coeff,digits=3)
+      DF.Unweighted2RC$stderr <- format(DF.Unweighted2RC$stderr,digits=2,nsmall=3)
+      colnames(DF.Unweighted2RC) <- c("Method", "Coeff", "StdErr",paste0(input$cmbclev2RC,"% C.I."),"P-Value")
+
+      output$gridOutCont <- renderTable(DF.Unweighted2RC,bordered = TRUE,spacing = 'xs',striped = TRUE)
+      ItemsUnweighted$tab <- paste0(ItemsUnweighted$tab,",pdftit2RC2,tableGrob(DF.Unweighted2RC,rows=NULL)")
+
+      # Has benchmarking been requested?  If yes, then output the benchmarking table for unweighted coefficients
+      if (input$optbench !="none"){
+        output$hline.bench2C <- renderUI(tags$hr(style="border-color: purple;"))
+        bench.name <- switch (input$optbench,
+                              lk = "Landis-Koch",
+                              altman = "Altman",
+                              fleiss = "Fleiss"
+        )
+        output$titBench1U2C <- renderUI(HTML("<b>",paste0(bench.name," Interpretation of Unweighted Agreement Coefficients</b>")))
+        output$titBench2U2C <- renderUI(HTML("Benchmarking Unweighted Coefficients using Cumulative Membership Probabilities"))
+        pdftit2RC3<-textGrob(paste0(bench.name," Interpretation of Unweighted Agreement Coefficients"),gp=gpar(size=12,font=3))
+        DFR <- benchmark.table(UnweightedFR(),"2C")
+        ItemsUnweighted$tab <- paste0(ItemsUnweighted$tab,",pdftit2RC3,tableGrob(DFR,rows=NULL)") #Update the global list of tables that can be exported to a PDF file
+        bench.request$BR <- TRUE #Indicator that a benchmarking has been printed
+        output$gridOutBenchU2C <- renderTable(DFR,bordered = TRUE,spacing = 'xs',rownames = TRUE)
+
+        if (input$chkweighted2RC==TRUE){
+          output$titBench1W2C <- renderUI(HTML("<b>",paste0(bench.name," Interpretation of Weighted Agreement Coefficients</b>")))
+          output$titBench2W2C <- renderUI(HTML("Benchmarking Weighted Coefficients using Cumulative Membership Probabilities"))
+          dftit3RC2W<-textGrob(paste0(bench.name," Interpretation of Weighted Agreement Coefficients</b>"),gp=gpar(size=12,font=3))
+        }
+        else{
+          output$titBench1W2C <- renderUI(HTML(""))
+          output$titBench2W2C <- renderUI(HTML(""))
+        }
+      }else{
+        if (bench.request$BR){
+          output$gridOutBenchU2C=renderTable(data.frame())
+          bench.request$BR <- FALSE
+        }
+        output$hline.bench2C <- renderUI(HTML(""))
+        output$titBench1U2C <- renderUI(HTML(""))
+        output$titBench2U2C <- renderUI(HTML(""))
+        output$titBench1W2C <- renderUI(HTML(""))
+        output$titBench2W2C <- renderUI(HTML(""))
+      }
+      #-->  Beginning of weighted analysis
+      if (input$chkweighted2RC==TRUE){
+        output$hlineWted2C <- renderUI(tags$hr(style="border-color: purple;"))
+        # Output the weighted coefficients
+        pdftit1RC2W<-textGrob(paste0("Weighted Agreement Coefficients / ",isolate(Weights2C.f()$wtit)),gp=gpar(size=12,font=3))
+        DF.Weighted2RC <- Wted.frame()
+        ItemsWeighted$tab<-"pdftit1RC2W,tableGrob(DF.Weighted2RC,rows=NULL)" #Update the global list of weighted tables that can be exported to a PDF file
+        output$titWted2C <- renderUI(HTML(paste0("Weighted Agreement Coefficients (",isolate(Weights2C.f()$wtit),")")))
+
+        DF.Weighted2RC$coeff <- format(DF.Weighted2RC$coeff,digits=3)
+        DF.Weighted2RC$stderr <- format(DF.Weighted2RC$stderr,digits=2,nsmall=3)
+        colnames(DF.Weighted2RC) <- c("Method", "Coeff", "StdErr",paste0(input$cmbclev2RC,"% C.I."),"P-Value")
+        output$gridOutWted2C <- renderTable(DF.Weighted2RC,bordered = TRUE,spacing = 'xs',striped = TRUE) # Printing out weighted coefficients
+        # Output the weight matrix
+        pdftit2RC2W<-textGrob(isolate(Weights2C.f()$wtit),gp=gpar(size=12,font=3))
+        output$titWtype2C <- renderUI(HTML(isolate(Weights2C.f()$wtit)))
+        Weights.frame <- as.data.frame(round(Weights(),4),colnames=NULL)
+        if (!is.na(clabels()[1])){
+          colnames(Weights.frame) <- clabels()[1:input$qCateg]
+          rownames(Weights.frame) <- clabels()[1:input$qCateg]
+        }else{
+          colnames(Weights.frame) <- unlist(lapply(1:input$qCateg, function(j) {paste0("Categ",j)}))
+          rownames(Weights.frame) <- unlist(lapply(1:input$qCateg, function(j) {paste0("Categ",j)}))
+        }
+        #Printing the weight matrix used to compute weighted agreement coefficients
+        output$gridOutWeights2C = renderTable(Weights.frame,rownames = TRUE,bordered = TRUE,spacing = 'xs')
+        ItemsWeighted$tab<-paste0(ItemsWeighted$tab,",pdftit2RC2W,tableGrob(Weights.frame)")
+
+        if (isolate(input$optbench) !='none'){
+          WBenchTable <- benchmark.table(isolate(Wted.frame()),"2C")
+          WBenchTable1 <- Wted.frame
+          bench.request.w$WBR <- TRUE
+          output$gridOutBenchW2C=renderTable(WBenchTable,bordered = TRUE,spacing = 'xs')
+
+          ItemsWeighted$tab<-paste0(ItemsWeighted$tab,",dftit3RC2W,tableGrob(WBenchTable,rows=NULL)")
+          ItemsWeighted$tab <- paste0("grid.arrange(",ItemsWeighted$tab,
+                                      ",bottom=textGrob('---- End of the Weighted Analysis ------')",
+                                      ",top = textGrob('Weighted Analysis of Agreement Coefficients',gp=gpar(fontsize=14,font=2)),",
+                                      "vp=viewport(width=0.7, height=0.85),nrow=7)")
+        }else{
+          ItemsWeighted$tab <- paste0("grid.arrange(",ItemsWeighted$tab,
+                                      ",bottom=textGrob('---- End of the Weighted Analysis ------')",
+                                      ",top = textGrob('Weighted Analysis of Agreement Coefficients',gp=gpar(fontsize=14,font=2)),",
+                                      "vp=viewport(width=0.7, height=0.85),nrow=5)")
+          if (bench.request.w$WBR){
+            output$gridOutBenchW2C <- renderTable(data.frame())
+          }
+        }
+      }else{
+        ItemsWeighted$tab<-NULL
+        output$gridOutWted2C <- renderTable(data.frame())
+        output$titWted2C <- renderUI(HTML(""))
+        output$titWtype2C <- renderUI(HTML(""))
+        output$gridOutWeights2C <- renderTable(data.frame())
+        output$gridOutBenchW2C <- renderTable(data.frame())
+      } #End of weighted analysis
+
+
+
+      #-> Exporting the output to a PDF file
+
+      if (input$optbench !="none"){
+        ItemsUnweighted$tab <- paste0("grid.arrange(",ItemsUnweighted$tab,
+                                      ",bottom=textGrob('---- End of Unweighted Analysis ------')",
+                                      ",top = textGrob('Unweighted Analysis of Agreement Coefficients',gp=gpar(fontsize=14,font=2)),",
+                                      "vp=viewport(width=0.7, height=0.85),nrow=7)")
+      }else{
+        ItemsUnweighted$tab <- paste0("grid.arrange(",ItemsUnweighted$tab,
+                                      ",bottom=textGrob('---- End of Unweighted Analysis ------')",
+                                      ",top = textGrob('Unweighted Analysis of Agreement Coefficients',gp=gpar(fontsize=14,font=2)),",
+                                      "vp=viewport(width=0.7, height=0.85),nrow=5)")
+      }
+      output$ExportPDF2RC = downloadHandler(
+        # filename = function() {paste("agreestat", "_",Sys.time(),".pdf",sep="")},
+        filename = function() {paste("agreestat",".pdf",sep="")},
+        content = function(file) {
+          pdf(file, onefile = TRUE,width=8.5,height=11)
+          eval(parse(text=ItemsUnweighted$tab))
+          if (!is.null(ItemsWeighted$tab)){
+            eval(parse(text=ItemsWeighted$tab))
+          }
+          dev.off()
+        }
+      )
+    }) # END OF observeEvent(input$cmdExecute2xC,{
+
+
+    # Once the number of categories in the combobox changes the "Contingency" tabpanel must be selected
+    observeEvent(input$qCateg,
+                 updateTabsetPanel(session, "TabsetId", selected = "panel1")
+    )
+
+    #------------------------------------------------------------------------------
+    #   Create crosstab for capturing ratings
+    #------------------------------------------------------------------------------
+      # print all category labels of the top row
+    clabels <- reactive(clabels <- str_trim(unlist(strsplit(input$ti.clabels2RC,","))))
+    output$titInput <- renderUI(HTML("<b><font size=5>Enter your Numbers in Cells!</font></b>"))
+    output$custcateg2RC <- renderUI(HTML("Customize Category Labels <i>(Separated by Comma)</i>"))
+
+    output$Categories <-renderUI( #display category labels in the first row
+      fluidRow(
+        column(1, helpText("")),
+        lapply(1:input$qCateg, function(j) {
+          if (!is.null(cnames2RC$cols) & input$Import2RR==TRUE){
+            if (!is.na(cnames2RC$cols[j])) column(width=1, helpText(substr(cnames2RC$cols[j],1,6)),offset=0)
+            else column(width=1, helpText(paste0('Categ', j)),offset=0)
+          }else{
+            if (!is.na(clabels()[j])) column(width=1, helpText(substr(clabels()[j],1,6)),offset=0)
+            else{
+              column(width=1, helpText(paste0('Categ', j)),offset=0)
+            }
+          }
+        })
+      )
+    )
+
+    ratings.populate <- function(){
+      output$Ratings <-renderUI( # display all ratings table cells and category labels of the first column
+        lapply(1:input$qCateg, function(i) {
+          fluidRow(
+            if (!is.null(cnames2RC$cols)){
+              if (!is.na(cnames2RC$cols[i])) column(width=1, helpText(substr(cnames2RC$cols[i],1,6)),offset=0)
+              else column(width=1, helpText(paste0('Categ', i)),offset=0)
+            }else{
+              if (!is.na(clabels()[i])) column(width=1, helpText(substr(clabels()[i],1,6)))
+              else column(width=1, helpText(paste0('Categ', i)))
+            },
+            lapply(1:input$qCateg, function(j) {
+              column(width=1, textInput(paste0("Cells2C",i,j), label = NULL,value = isolate(nkl.mat())[i,j]),
+                     tags$style(type='text/css',paste0("#Cells2C",i,j," { width: 50px;text-align:center;}")),offset = 0)
+            })
+          )
+        })
+      )
+    }
+    nkl.mat <- reactive({
+      q <- as.numeric(input$qCateg)
+      if (!is.null(input[[paste0('Cells2C',q,q)]])) read.ratings(q)
+      else
+        matrix(0,q,q)
+    })
+    ratings.populate()
+
+    #------------------------------------------------------------------------------
+    #   Create crosstab for capturing custom weights
+    #------------------------------------------------------------------------------
+
+    # print all category labels of the top row
+
+    output$crowcategs <-renderUI(
+      fluidRow(
+        column(1, helpText("")),
+        lapply(1:input$qCateg, function(j) {
+          if (!is.null(cnames2RC$cols) ){
+            if (!is.na(cnames2RC$cols[j])) column(width=1, helpText(substr(cnames2RC$cols[j],1,6)),offset=0)
+            else column(width=1, helpText(paste0('Categ', j)),offset=0)
+          }else{
+            if (!is.na(clabels()[j])) column(width=1, helpText(substr(clabels()[j],1,6)),offset=0)
+            else column(width=1, helpText(paste0('Categ', j)),offset=0)
+          }
+        })
+      ))
+
+    # display all custom weights table cells and category labels of the first column
+
+    output$cweights <-renderUI(
+      lapply(1:input$qCateg, function(i) {
+        fluidRow(
+          if (!is.null(cnames2RC$cols)){
+            if (!is.na(cnames2RC$cols[i])) column(width=1, helpText(substr(cnames2RC$cols[i],1,6)),offset=0)
+            else column(width=1, helpText(paste0('Categ', i)),offset=0)
+          }else{
+            if (!is.na(clabels()[i])) column(width=1, helpText(substr(clabels()[i],1,6)))
+            else column(width=1, helpText(paste0('Categ', i)))
+          },
+          #column(width=1, helpText(paste0('Categ', i))),
+          lapply(1:input$qCateg, function(j) {
+            if (i==j){
+              column(width=1, textInput(paste0("wCells2C",i,j), label = NULL,value = "1"),
+                     tags$style(type='text/css',paste0("#wCells2C",i,j," { width: 50px;text-align:center;}")),offset = 0)
+            } else {
+              column(width=1, textInput(paste0("wCells2C",i,j), label = NULL,value = "0"),
+                     tags$style(type='text/css',paste0("#wCells2C",i,j," { width: 50px;text-align:center;}")),offset = 0)
+            }
+          })
+        )
+      })
+    )
+    #--> disable all diagonal cells in the custom weights table
+    observe({
+      lapply(1:input$qCateg, function(i) {
+        if (!is.null(input[[paste0("wCells2C",i,i)]])) {
+          shinyjs::disable(paste0("wCells2C",i,i))
+        }
+      })
+    })
+
+
+    #---------------------------------------#
+    #                                       #
+    #  Treatment of 2 columns of raw data   #
+    #  ==================================   #
+    #                                       #
+    #---------------------------------------#
+
+        #### Some general-purpose functions for computing agreement coefficients with 2 Raters/Raw
+
+    shinyjs::disable("chkpct2RR") # disable checkbox of percent agreement
+    observeEvent(input$chkGrp2RR,{
+      updateTabsetPanel(session, "TabId2RR", selected = "panel1R2R") # Once the chkGrp3RR button is pressed the "Input" tabpanel must be selected
+    })
+    categ <- reactiveValues(vec2RR=NULL,vec3RR=NULL) #Category labels for 2-rater and 3-rater cases
+
+    # Function to generate the appropriate weights for the weighted analysis
+
+    WeightsGen.f <-function(categ.lst,WeightRequest,WeightType,WeightName,Raters2Or3){
+      if (WeightRequest==TRUE){
+        if (WeightType=="predw"){
+          switch(WeightName,
+                 quaw={
+                   weight.tit <-"Quadratic Weights"
+                   weight.mat <- quadratic.weights(categ.lst)
+                 },
+                 linw={
+                   weight.tit <-"Linear Weights"
+                   weight.mat <- linear.weights(categ.lst)
+                 },
+                 radw={
+                   weight.tit <-"Radical Weights"
+                   weight.mat <- radical.weights(categ.lst)
+                 },
+                 ordw={
+                   weight.tit <-"Ordinal Weights"
+                   weight.mat <- ordinal.weights(categ.lst)
+                 },
+                 ratw={
+                   weight.tit <-"Ratio Weights"
+                   weight.mat <- ratio.weights(categ.lst)
+                 },
+                 cirw={
+                   weight.tit <-"Circular Weights"
+                   weight.mat <- circular.weights(categ.lst)
+                 },
+                 bipw={
+                   weight.tit <-"Bipolar Weights"
+                   weight.mat <- bipolar.weights(categ.lst)
+                 }
+          )#switch
+        }else { # these are custom weights
+          weight.tit <- "Custom Weights"
+          if (Raters2Or3=="2R") weight.mat <- read.cweights2RR(categ.lst)
+          else if (Raters2Or3=="3R") weight.mat <- read.cweights3RR(categ.lst)
+          else if (Raters2Or3=="3D") weight.mat <- read.cweights3RD(categ.lst)
+        }
+      }else{ # these are identity weights
+        weight.tit <-""
+        weight.mat <- identity.weights(categ.lst)
+      }
+      return(list(wtit=weight.tit,wmat=weight.mat))
+    }
+
+    # The coefficients3RR.f function returns a data frame containing all coefficients
+    coefficients3RR.f <- function(wtmat.p,categvec.p,fra.ratings.raw,
+                                  kappa.in, ac1.in, fleiss.in, alpha.in, BP.in){
+      coeffmat.p <- data.frame()
+      conf.lev = as.numeric(isolate(input$cmbclev2RR))/100
+      q = nrow(wtmat.p)
+      i=0
+      if (kappa.in==TRUE) {
+        i <- i+1
+        coeffmat.p = rbind(coeffmat.p,conger.kappa.raw(ratings=fra.ratings.raw,weights=wtmat.p,categvec.p,
+                                          conflev=conf.lev,N=Inf)$est)
+      }
+      if (ac1.in==TRUE) {
+        i <- i+1
+        coeffmat.p = rbind(coeffmat.p,gwet.ac1.raw(ratings=fra.ratings.raw,weights=wtmat.p,categvec.p,
+                                      conflev=conf.lev,N=Inf)$est)
+      }
+      if (fleiss.in==TRUE) {
+        i <- i+1
+        coeffmat.p = rbind(coeffmat.p,fleiss.kappa.raw(ratings=fra.ratings.raw,weights=wtmat.p,categvec.p,
+                                          conflev=conf.lev,N=Inf)$est)
+      }
+      if (alpha.in==TRUE) {
+        i <- i+1
+        coeffmat.p = rbind(coeffmat.p,krippen.alpha.raw(ratings=fra.ratings.raw,weights=wtmat.p,categvec.p,
+                                           conflev=conf.lev,N=Inf)$est)
+      }
+      if (BP.in==TRUE) {
+        i <- i+1
+        coeffmat.p = rbind(coeffmat.p,bp.coeff.raw(ratings=fra.ratings.raw,weights=wtmat.p,categvec.p,
+                                      conflev=conf.lev,N=Inf)$est)
+      }
+      i <- i+1
+      coeffmat.p = rbind(coeffmat.p,pa.coeff.raw(ratings=fra.ratings.raw,weights=wtmat.p,categvec.p,
+                                    conflev=conf.lev,N=Inf)$est)
+      res.frame <- coeffmat.p[1:i,]
+      res.frame$coeff.val  <- formatC(res.frame$coeff.val,format="f",digits=3)
+      res.frame$coeff.se  <- formatC(res.frame$coeff.se,format="f",digits=3)
+      res.frame$p.value <- formatC(res.frame$p.value,format="e",digits=3)
+      return(res.frame)
+    }
+
+
+    # The categories.f function returns a vector of unique categories from selected ratings
+
+    categories.f <- function(){
+      if (input$header2RR1){
+        if (nratings.r1$row1==1) nratings.r1.row1 <- nratings.r1$row1+1
+        else nratings.r1.row1 <- nratings.r1$row1
+      }else nratings.r1.row1 <- nratings.r1$row1
+      if (input$header2RR2){
+        if (nratings.r2$row1==1) nratings.r2.row1 <- nratings.r2$row1 + 1
+        else nratings.r2.row1 <- nratings.r2$row1
+      } else nratings.r2.row1 <- nratings.r2$row1
+      nratings.r1.colno <- nratings.r1$colno
+      nratings.r2.colno <- nratings.r2$colno
+      nratings.r1.row2 <- nratings.r1$row2
+      nratings.r2.row2 <- nratings.r2$row2
+      isolate(
+        DF.2RR <- cbind(
+          as.matrix(dfra2RR$data[nratings.r1.row1:nratings.r1.row2,nratings.r1.colno]),
+          as.matrix(dfra2RR$data[nratings.r2.row1:nratings.r2.row2,nratings.r2.colno])
+        )
+      )
+      fra2RR.mat <- trim(as.matrix(DF.2RR))
+      fra2RR.mat[fra2RR.mat==""] <- NA
+      categ.init <- unique(na.omit(as.vector(unlist(fra2RR.mat))))
+      catego.vec <- sort(categ.init)
+      return(catego.vec)
+    }
+
+    # The categories.f function returns a vector of unique categories from selected ratings
+
+    cusweights2RR.f <- function(catvec){
+      q <- length(catvec)
+      output$crowcat2RR <-renderUI(
+        fluidRow(
+          column(1, helpText("")),
+          lapply(1:q, function(j) {
+            column(width=1, helpText(substr(catvec[j],1,6)),offset=0)
+          })
+        ))
+      output$cwts2RR <-renderUI(
+        lapply(1:q, function(i) {
+          fluidRow(
+            column(width=1, helpText(substr(catvec[i],1,6),align="center"),offset=0),
+            lapply(1:q, function(j) {
+              if (i==j){
+                column(width=1, textInput(paste0("wCells2RR",i,j), label = NULL,value = "1"),
+                       tags$style(type='text/css',paste0("#wCells2RR",i,j," {width: 60px;text-align:center;}")),offset = 0)
+              } else{
+                column(width=1, textInput(paste0("wCells2RR",i,j), label = NULL,value = "0"),
+                       tags$style(type='text/css',paste0("#wCells2RR",i,j," {width: 60px;text-align:center;}")),offset = 0)
+              }
+            })
+          )
+        })
+      )
+      # observe({ # disable all diagonal cells
+      #   lapply(1:q, function(i) {
+      #     if (!is.null(input[[paste0("wCells2RR",i,i)]])) {
+      #       shinyjs::disable(paste0("wCells2RR",i,i))
+      #     }
+      #   })
+      # })
+    }
+    #### This function generates a string vector containin all tables produced
+    output.tables2RR.f <- function(){
+      out.tabs <- "dist.subjects,fra.Coeff2RR"
+      if (input$optbench2RR !="none") out.tabs <- paste0(out.tabs,",DFR")
+      if (input$chkweighted2RR==TRUE){
+        out.tabs <- paste0(out.tabs,",DF.Weighted2RR")
+        if (input$optbench2RR !='none') out.tabs <- paste0(out.tabs,",WBenchTable")
+        out.tabs <- paste0(out.tabs,",Weights2RR.fra")
+      }
+      return(out.tabs)
+    }
+
+    ########################  PREPARE TO EXPORT RESULTS TO A PDF FILE  ###################
+
+    ### The add.row.f function add grob title "xtit" to gronb table "xtable"
+    ## tit.max is the widest title of the report and is used to position titles and tables
+    add.row.f <- function(xtit, xtable, tit.max){
+      padding <- unit(8,"mm")
+      w.max <- 0.5*grobWidth(tit.max)
+      new.table <- gtable_add_rows(
+        xtable,
+        heights = grobHeight(xtit) + padding,
+        pos = 0)
+      new.table <- gtable_add_cols(new.table, widths=w.max, pos = 0)
+      new.table <- gtable_add_cols(new.table, widths=w.max, pos = -1)
+      new.table <- gtable_add_grob(
+        new.table,
+        xtit,
+        t=1, l=1, b=1, r=ncol(new.table)
+      )
+      return(new.table)
+    }
+    ## Function PDF.export.fn exports to a PDF file all results displayed on the screen.  The input parameter is a list of all tables
+    ## that were output by the Exceute command (The lapply routine created the list out.tables). It uses "function add.row.f".
+    PDF.exportCAC.fn <- function(out.tables,ExportPDF,group.names,catvec,
+                                 pdftit1,pdftit2,pdftit3,
+                                 pdftit4,pdftit5,pdftit6,
+                                 pdftit7,pdftit8,pdftit9){
+      if (length(group.names)==1){
+        nb.groups.all <- 1 #nb.groups.all = # groups to process including the "ALL" group
+        nb.grps <- 1 #nb.grps = # gfroups to process excluding the "ALL" group
+      }else{
+        nb.groups.all <- length(group.names)
+        nb.grps <- nb.groups.all-1
+      }
+      nb.tables <- length(out.tables[[1]]) # Number of tables created for each group
+      ### t.list contains a list of all tables along with their titles. Tables and associated titles are created as single Grob objects
+      t.list <-lapply(1:nb.groups.all, function(g){
+        tab1 <- add.row.f(pdftit1,tableGrob(as.data.frame(out.tables[[g]][[1]])),pdftit2)
+        tab2 <- add.row.f(pdftit3,tableGrob(as.data.frame(out.tables[[g]][[2]]),rows=NULL),pdftit2)
+        tab2 <- add.row.f(pdftit2,tab2,pdftit2)
+        tab.list <- list(tab1,tab2)
+        if (nb.tables==3){
+          tab3 <- add.row.f(pdftit5,tableGrob(as.data.frame(out.tables[[g]][[3]])),pdftit2)
+          tab3 <- add.row.f(pdftit4,tab3,pdftit2)
+          tab.list <- list(tab1,tab2,tab3)
+        }
+        if (nb.tables==4){
+          tab3 <- add.row.f(pdftit6,tableGrob(as.data.frame(out.tables[[g]][[3]]),rows=NULL),pdftit2)
+          tab4 <- add.row.f(pdftit9,tableGrob(as.data.frame(out.tables[[g]][[4]]),rows=catvec,cols=catvec),pdftit2)
+          tab.list <- list(tab1,tab2,tab3,tab4)
+        }
+        if (nb.tables==6){
+          tab3 <- add.row.f(pdftit5,tableGrob(as.data.frame(out.tables[[g]][[3]])),pdftit2)
+          tab3 <- add.row.f(pdftit4,tab3,pdftit2)
+          tab4 <- add.row.f(pdftit6,tableGrob(as.data.frame(out.tables[[g]][[4]]),rows=NULL),pdftit2)
+          tab5 <- add.row.f(pdftit8,tableGrob(as.data.frame(out.tables[[g]][[5]])),pdftit2)
+          tab5 <- add.row.f(pdftit7,tab5,pdftit2)
+          tab6 <- add.row.f(pdftit9,tableGrob(as.data.frame(out.tables[[g]][[6]]),rows=catvec,cols=catvec),pdftit2)
+          tab.list <- list(tab1,tab2,tab3,tab4,tab5,tab6)
+        }
+        return(tab.list)
+      })
+
+      toptit <- "INTER-RATER RELIABILITY ANALYSIS / CAC"
+      xtime <- format(Sys.time(), "%a %b %d %X %Y")
+      output[[ExportPDF]] = downloadHandler(
+        filename = function() {paste("agreestat",".pdf",sep="")},
+        content = function(file){
+          pdf(file, onefile = TRUE,width=8.5,height=11)
+          lapply(1:nb.groups.all, function(g){
+            if (nb.grps>=2) toptit <- paste0(toptit," (Group: ",group.names[g],")")
+            if (nb.tables<=3){
+              grp.tabs <- sapply(1:nb.tables, function(k){
+                return(paste0("t.list[[",g,"]][[",k,"]],"))
+              })
+              grp.tabs <- paste(grp.tabs,collapse="")
+              eval(parse(text=paste0(
+                "grid.arrange(",grp.tabs,"nrow=nb.tables,
+                               bottom = textGrob(paste0('---------- ',xtime,' ----------')),
+                               top = textGrob(toptit,gp=gpar(fontsize=14,font=2)),
+                               vp=viewport(h=0.9)
+                             )"
+              )))
+            }else{
+              if (nb.tables==4) nb.max <- 2
+              else nb.max <- 3
+              grp.tabs <- sapply(1:nb.max, function(k){
+                return(paste0("t.list[[",g,"]][[",k,"]],"))
+              })
+              grp.tabs <- paste(grp.tabs,collapse="")
+              eval(parse(text=paste0(
+                "grid.arrange(",grp.tabs,"nrow=nb.max,
+                               bottom = textGrob(paste0('---------- ',xtime,' ----------')),
+                               top = textGrob(toptit,gp=gpar(fontsize=14,font=2)),
+                               vp=viewport(h=0.9)
+                             )"
+              )))
+              grp.tabs <- sapply((nb.tables-nb.max+1):nb.tables, function(k){
+                return(paste0("t.list[[",g,"]][[",k,"]],"))
+              })
+              grp.tabs <- paste(grp.tabs,collapse="")
+              eval(parse(text=paste0(
+                "grid.arrange(",grp.tabs,"nrow=nb.max,
+                               bottom = textGrob(paste0('---------- ',xtime,' ----------')),
+                               top = textGrob(toptit,gp=gpar(fontsize=14,font=2)),
+                               vp=viewport(h=0.9)
+                             )"
+              )))
+            }
+          })
+          dev.off()
+        }
+      )
+    }#### END OF the "function PDF.export.fn(out.tables)"
+
+
+
+
+
+
+
+    ######## ---  END of preliminary functions -------##########
+
+
+    #1. Preliminary initializations
+
+        # CAC initializations
+    DF2RR = data.frame( # initial template when there is no subgroup analysis (to be modified by user)
+        rbind(c("Rater1","Rater2"),
+              matrix("0",10,2)
+        )
+    )
+    colnames(DF2RR)=LETTERS[1:2]
+    DF2RR.GRP = as.data.frame(# initial template to be used when subgroup analysis is requested (to be modified by user)
+        rbind(c("Group","Rater1","Rater2"),
+            cbind(as.vector(cbind(rep("A",5),rep("B",5))),
+                  matrix("0",10,2)
+            )
+        )
+    )
+    colnames(DF2RR.GRP)=LETTERS[1:3]
+
+       # ICC initializations
+    DF2RR.ICC = data.frame( # initial template when there is no subgroup analysis (to be modified by user)
+      rbind(c("Target","Rater1","Rater2"),
+            cbind(c(1:10),matrix("0",10,2))
+      )
+    )
+    colnames(DF2RR.ICC)=LETTERS[1:3]
+    DF2RR.ICC.GRP = as.data.frame(# initial template to be used when subgroup analysis is requested (to be modified by user)
+      rbind(c("Group","Target", "Rater1","Rater2"),
+            cbind(c(rep("A",5),rep("B",5)),
+                  c(1:10),
+                  matrix("0",10,2)
+            )
+      )
+    )
+    colnames(DF2RR.ICC.GRP)=LETTERS[1:4]
+
+
+    #2. Deciding here which option panel to display (CAC or ICC)
+
+    observe({
+      toggle(condition = (input$optMethod2RR =='cac'),
+             selector = "#TabId2RR li a[data-value=panel2R2R]")
+      toggle(condition = (input$optMethod2RR =='cac'),
+             selector = "#TabId2RR li a[data-value=panel5R2R]")
+      toggle(condition = (input$optMethod2RR =='icc'),
+             selector = "#TabId2RR li a[data-value=panel3R2R]")
+      toggle(condition = (input$optMethod2RR =='icc'),
+             selector = "#TabId2RR li a[data-value=panel6R2R]")
+
+      if (input$optMethod2RR =='cac' | input$optMethod2RR =='icc' ) {
+        updateTabsetPanel(session,"TabId2RR",selected = "panel1R2R")
+      }
+    })
+
+    #3. Reading the external dataset #
+
+    dfra2RR <- reactiveValues(data=DF2RR)
+    output$grid2RRaw = renderRHandsontable({
+      if (input$Import2RR==TRUE){
+        inFile <- input$file2RR
+        if (is.null(inFile)) return(NULL)
+        if (isolate(input$ftype2RR)=='csv') DF <- read.csv(inFile$datapath, header = FALSE, sep = input$sep2R, quote = input$quote2R)
+        else DF <- read_excel(inFile$datapath,col_names=FALSE)
+        colnames(DF) = LETTERS[1:ncol(DF)]
+      }else{
+        if (input$chkGrp2RR){
+          if (input$optMethod2RR =='cac') DF <- DF2RR.GRP
+          else DF <- DF2RR.ICC.GRP
+        }
+        else{
+          if (input$optMethod2RR =='cac') DF <- DF2RR
+          else DF <- DF2RR.ICC
+        }
+      }
+      dfra2RR$data <- DF
+      rhandsontable(DF,selectCallback = TRUE, width=350,height = 450,useTypes = FALSE,rowHeaders = TRUE) %>%
+        hot_context_menu(allowColEdit = FALSE,allowRowEdit = TRUE)
+    })
+    observeEvent(input$grid2RRaw, { #This is necessary to update the table in realtime
+        dfra2RR$data <- hot_to_r(input$grid2RRaw)
+    })
+
+    #4. Manage the display of the 'custom weights' tabpanel
+    #   ---------------------------------------------------
+
+    observeEvent(input$optWtype2RR,{ # hide/show(without selecting) custom-weight panel
+      toggle(condition = (input$optWtype2RR =='cusw' & input$chkweighted2RR==TRUE),
+             selector = "#TabId2RR li a[data-value=panel4R2R]")
+    })
+    observeEvent(input$chkweighted2RR,{ # hide/show(without selecting) custom-weight panel
+      toggle(condition = (input$optWtype2RR =='cusw' & input$chkweighted2RR==TRUE),
+             selector = "#TabId2RR li a[data-value=panel4R2R]")
+    })
+
+    observeEvent(input$optWtype2RR,{ # Change the selected panel depending on the type of weights needed
+      if (input$optWtype2RR =='cusw') {
+        updateTabsetPanel(session, "TabId2RR", selected = "panel4R2R")
+        catvec <- categories.f()
+        nbcat.q <- length(catvec)
+        # CUSTOM WEIGHTS TREATMENT
+
+         output$crowcat2RR <-renderUI({
+           fluidRow(
+             column(1, helpText("")),
+             lapply(1:nbcat.q, function(j) {
+               column(width=1, helpText(substr(catvec[j],1,6)),offset=0)
+             })
+           )
+         })
+         output$cwts2RR <-renderUI(
+           lapply(1:nbcat.q, function(i) {
+             fluidRow(
+               column(width=1, helpText(substr(catvec[i],1,6),align="center"),offset=0),
+               lapply(1:nbcat.q, function(j) {
+                 if (i==j){
+                   column(width=1, disabled(textInput(paste0("wCells2RR",i,j), label = NULL,value = "1")),
+                          tags$style(type='text/css',paste0("#wCells2RR",i,j," {width: 60px;text-align:center;}")),offset = 0)
+                 } else{
+                   column(width=1, textInput(paste0("wCells2RR",i,j), label = NULL,value = "0"),
+                          tags$style(type='text/css',paste0("#wCells2RR",i,j," {width: 60px;text-align:center;}")),offset = 0)
+                 }
+               })
+             )
+           })
+         )
+      } else {
+#        updateTabsetPanel(session, "TabId2RR", selected = "panel1R2R")
+      }
+    })
+
+    #- User-defined function to read the contingency table of custom weights for the 2RR case
+
+    read.cweights2RR <- function(catego.vec){
+      q <- length(catego.vec)
+      nkl.mat <- matrix(0,q,q)
+      for (k in 1:q){
+        for (l in 1:q){
+          nkl.mat[k,l] <- as.numeric(input[[paste0('wCells2RR',k,l)]])
+        }
+      }
+      nkl.mat
+    }
+
+    # 5. Describe the initial ratings selected by default
+    # ------------------------------------------------
+    nratings.r1 <- reactiveValues(row1=1,row2=1,colno=1) #store rater'1 data coordinates
+    nratings.r2 <- reactiveValues(row1=1,row2=1,colno=1) #store rater'2 data coordinates
+    n2RR.tar <- reactiveValues(row1=1,row2=1,colno=1) #store group data coordinates
+    n2RR.grp <- reactiveValues(row1=1,row2=1,colno=1) #store group data coordinates
+    observe({
+      n2RR.grp$row1 <- 1
+      n2RR.grp$row2 <- nrow(dfra2RR$data)
+      if (is.null(input$vt2RTar)){
+        n2RR.tar$row1 <- 1
+        n2RR.tar$row2 <- nrow(dfra2RR$data)
+      }
+      if (is.null(input$vt2RRater1)){
+        nratings.r1$row1 <- 1
+        nratings.r1$row2 <- nrow(dfra2RR$data)
+      }
+      if (is.null(input$vt2RRater2)){
+        nratings.r2$row1 <- 1
+        nratings.r2$row2 <- nrow(dfra2RR$data)
+      }
+      if (input$optMethod2RR =='cac'){
+        if (input$chkGrp2RR){
+          n2RR.grp$colno <- 1
+          nratings.r1$colno <- 2
+          nratings.r2$colno <- 3
+        }else{
+          nratings.r1$colno <- 1
+          nratings.r2$colno <- 2
+        }
+      }
+      else{ #(input$optMethod2RR =='icc')
+        if (input$chkGrp2RR){
+          n2RR.grp$colno <- 1
+          n2RR.tar$colno <- 2
+          nratings.r1$colno <- 3
+          nratings.r2$colno <- 4
+        }else{
+          n2RR.tar$colno <- 1
+          nratings.r1$colno <- 2
+          nratings.r2$colno <- 3
+        }
+      }
+      output$vt2RGrp <- renderUI(HTML(paste0("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Group data:<b> A1:A",n2RR.grp$row2,"</b>")))
+      output$vt2RTar <- renderUI(HTML(paste0("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Target data:<b>",LETTERS[n2RR.tar$colno],n2RR.tar$row1,":",LETTERS[n2RR.tar$colno],n2RR.tar$row2,"</b>")))
+      output$vt2RRater1 <- renderUI(HTML(paste0("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Rater 1's data: <b>",LETTERS[nratings.r1$colno],nratings.r1$row1,":",LETTERS[nratings.r1$colno],nratings.r1$row2,"</b>")))
+      output$vt2RRater2 <- renderUI(HTML(paste0("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Rater 2's data: <b>",LETTERS[nratings.r2$colno],nratings.r2$row1,":",LETTERS[nratings.r2$colno],nratings.r2$row2,"</b>")))
+    })
+
+    #6. Capturing rating data that are highligted by the user
+
+    xmin <- reactiveValues(i=1,j=1) #top-leftmost selected cell coordinates
+    xmax <- reactiveValues(i=1,j=1) #botton-rightmost selected cell coordinates
+    observeEvent(input$abConfirm2RGR,{ #selecting group data
+      xmin$i <- input$grid2RRaw_select$select$r
+      xmin$j <- input$grid2RRaw_select$select$c
+      xmax$i <- input$grid2RRaw_select$select$r2
+      xmax$j <- input$grid2RRaw_select$select$c2
+      if (!is.null(xmin$i)){
+        n2RR.grp$row1 <- isolate(xmin$i)
+        n2RR.grp$row2 <- isolate(xmax$i)
+        n2RR.grp$colno <- isolate(xmin$j)
+        output$vt2RGrp <- renderUI(HTML(paste0("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Group data: <b>",LETTERS[isolate(xmin$j)],isolate(xmin$i),":",LETTERS[isolate(xmin$j)],isolate(xmax$i),"</b>")))
+      }
+    })
+    observeEvent(input$abConfirm2RTar,{ #selecting group data
+      xmin$i <- input$grid2RRaw_select$select$r
+      xmin$j <- input$grid2RRaw_select$select$c
+      xmax$i <- input$grid2RRaw_select$select$r2
+      xmax$j <- input$grid2RRaw_select$select$c2
+      if (!is.null(xmin$i)){
+        n2RR.tar$row1 <- isolate(xmin$i)
+        n2RR.tar$row2 <- isolate(xmax$i)
+        n2RR.tar$colno <- isolate(xmin$j)
+        output$vt2RTar <- renderUI(HTML(paste0("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Group data: <b>",LETTERS[isolate(xmin$j)],isolate(xmin$i),":",LETTERS[isolate(xmin$j)],isolate(xmax$i),"</b>")))
+      }
+    })
+    observeEvent(input$abConfirm2RR1,{ #selecting rater 1's data
+      xmin$i <- input$grid2RRaw_select$select$r
+      xmin$j <- input$grid2RRaw_select$select$c
+      xmax$i <- input$grid2RRaw_select$select$r2
+      xmax$j <- input$grid2RRaw_select$select$c2
+      if (!is.null(xmin$i)){
+        nratings.r1$row1 <- isolate(xmin$i)
+        nratings.r1$row2 <- isolate(xmax$i)
+        nratings.r1$colno <- isolate(xmin$j)
+      }
+    })
+    observeEvent(input$abConfirm2RR2,{ #selecting rater 2's data
+      xmin$i <- input$grid2RRaw_select$select$r
+      xmin$j <- input$grid2RRaw_select$select$c
+      xmax$i <- input$grid2RRaw_select$select$r2
+      xmax$j <- input$grid2RRaw_select$select$c2
+      if (!is.null(xmin$i)){
+        nratings.r2$row1 <- xmin$i
+        nratings.r2$row2 <- xmax$i
+        nratings.r2$colno <- xmin$j
+      }
+    })
+
+    #
+    #7. Two raters/raw: Creating the final dataset and computing agreement coefficients
+    #----------------------------------------------------------------------------------
+    #
+
+    rater.name <- reactiveValues(r1=NULL,r2=NULL,tar=NULL,grp=NULL) #raters 1 & 2's names
+    bench.request2R <- reactiveValues(BR=FALSE) # This reactive object stores the reactive value bench.request2R$BR that will become TRUE as soon as the first benchmarking is placed.
+    bench.request.w2R <- reactiveValues(WBR=FALSE) # Equivalent of bench.request for weighted coefficients
+
+    isprinted2RR.CAC <- reactiveValues(ct=NULL) # reactive value, which is NULL if no output is TRUE if there is CAC output
+    isprinted2RR.ICC <- reactiveValues(ct=NULL) # reactive value, which is NULL if no output is TRUE if there is ICC output
+    ItemsUnweighted2RR <- reactiveValues(tab=NULL) #ItemsUnweighted contains unweighted analysis output items to be saved as a PDF file
+    ItemsWeighted2RR <- reactiveValues(tab=NULL) #ItemsWeighted contains weighted analysis output items to be saved as a PDF file
+    Items2RR.ICC <- reactiveValues(tab=NULL) #ItemsUnweighted contains unweighted analysis output items to be saved as a PDF file
+
+    observe({
+      if (input$optMethod2RR=='cac'){
+        output$Download2RR.ICC <- renderUI(return())
+        if (input$TabId2RR=="panel5R2R" & !is.null(isprinted2RR.CAC$ct))
+          output$Download2RR.CAC <- renderUI({downloadButton('ExportPDF2RR.CAC', 'Save Output')})
+        else output$Download2RR.CAC <- renderUI(return()) #NULL
+      }
+      else{
+        output$Download2RR.CAC <- renderUI(return())
+        if (input$TabId2RR=="panel6R2R" & !is.null(isprinted2RR.ICC$ct))
+           output$Download2RR.ICC <- renderUI({downloadButton('ExportPDF2RR.ICC', 'Save Output')})
+        else output$Download2RR.ICC <- renderUI(return()) #NULL
+      }
+    })
+
+    ############  EXECUTE 2RR  #### observeEvent(input$cmdExecute2RR.CAC,{
+
+
+    observeEvent(input$cmdExecute2RR.CAC,{
+      updateTabsetPanel(session, "TabId2RR", selected = "panel5R2R") # Once the execute button is pressed the "Output" tabpanel must be selected
+
+      if (input$header2RR1){
+        rater.name$r1 <- as.character(dfra2RR$data[1,nratings.r1$colno])
+        if (nratings.r1$row1==1) nratings.r1.row1 <- nratings.r1$row1+1
+        else nratings.r1.row1 <- nratings.r1$row1
+      }else{
+        rater.name$r1 <- "Rater1"
+        nratings.r1.row1 <- nratings.r1$row1
+      }
+      if (input$header2RR2){
+        rater.name$r2 <- as.character(dfra2RR$data[1,nratings.r2$colno])
+        if (nratings.r2$row1==1) nratings.r2.row1 <- nratings.r2$row1 + 1
+        else nratings.r2.row1 <- nratings.r2$row1
+      } else{
+        rater.name$r2 <- "Rater2"
+        nratings.r2.row1 <- nratings.r2$row1
+      }
+
+      #7.1 create a single data frame comtaining both raters' ratings. Must create missing values (NAs) where appropriate
+
+      if (input$chkGrp2RR){ #- 2raters/raw -- Group treatment
+        if (input$header2RGR){
+          rater.name$GRP <- as.matrix(dfra2RR$data)[1,n2RR.grp$colno]
+          if (n2RR.grp$row1==1) n2RR.grp.row1 <- n2RR.grp$row1 +1
+          else n2RR.grp.row1 <- n2RR.grp$row1
+        }else{
+          rater.name$GRP <- "Group"
+          n2RR.grp.row1 <- n2RR.grp$row1
+        }
+        #7.1.1 The next 11 lines of code ensure that all columns have the same number of cells. Where there are differences, cells with missing data will be added.
+
+        r1.gap.row1 <- (nratings.r1.row1 > n2RR.grp.row1 )*(nratings.r1.row1 - n2RR.grp.row1)
+        r1.gap.row2 <- (nratings.r1$row2 < n2RR.grp$row2 )*(n2RR.grp$row2 - nratings.r1$row2)
+        r2.gap.row1 <- (nratings.r2.row1 > n2RR.grp.row1 )*(nratings.r2.row1 - n2RR.grp.row1)
+        r2.gap.row2 <- (nratings.r2$row2 < n2RR.grp$row2 )*(n2RR.grp$row2 - nratings.r2$row2)
+        DF.2RR <- cbind(as.matrix(dfra2RR$data[n2RR.grp.row1:n2RR.grp$row2,1]),
+                        rbind(matrix(NA,r1.gap.row1,1),
+                              as.matrix(dfra2RR$data[max(n2RR.grp.row1,nratings.r1.row1):min(n2RR.grp$row2,nratings.r1$row2),nratings.r1$colno]),
+                              matrix(NA,r1.gap.row2,1)),
+                        rbind(matrix(NA,r2.gap.row1,1),
+                              as.matrix(dfra2RR$data[max(n2RR.grp.row1,nratings.r2.row1):min(n2RR.grp$row2,nratings.r2$row2),nratings.r2$colno]),
+                              matrix(NA,r2.gap.row2,1)))
+        colnames(DF.2RR) <- c(rater.name$GRP,rater.name$r1,rater.name$r2)
+
+        #7.1.2 Calculating the vector of unique category values categ$vec2RR
+
+        fra2RR.mat <- trim(as.matrix(DF.2RR))
+        fra2RR.mat[fra2RR.mat==""] <- NA
+        categ.init <- unique(na.omit(as.vector(fra2RR.mat[,2:ncol(fra2RR.mat)])))
+        categ$vec2RR <- sort(categ.init)
+      }else{ #if (input$chkGrp2RR){ #- 2raters/raw -- No group treatment
+        min.row1 <- min(nratings.r1.row1,nratings.r2.row1)
+        max.row1 <- max(nratings.r1.row1,nratings.r2.row1)
+        min.row2 <- min(nratings.r1$row2,nratings.r2$row2)
+        max.row2 <- max(nratings.r1$row2,nratings.r2$row2)
+        r1.gap.row1 <- (nratings.r1.row1 > min.row1 )*(nratings.r1.row1 - min.row1)
+        r1.gap.row2 <- (nratings.r1$row2 < max.row2 )*(max.row2 - nratings.r1$row2)
+        r2.gap.row1 <- (nratings.r2.row1 > min.row1 )*(nratings.r2.row1 - min.row1)
+        r2.gap.row2 <- (nratings.r2$row2 < max.row2 )*(max.row2 - nratings.r2$row2)
+
+        DF.2RR <- cbind(rbind(matrix(NA,r1.gap.row1,1),
+                              as.matrix(dfra2RR$data[nratings.r1.row1:nratings.r1$row2,nratings.r1$colno]),
+                              matrix(NA,r1.gap.row2,1)),
+                        rbind(matrix(NA,r2.gap.row1,1),
+                              as.matrix(dfra2RR$data[nratings.r2.row1:nratings.r2$row2,nratings.r2$colno]),
+                              matrix(NA,r2.gap.row2,1)))
+
+        #7.1.2 - Calculating the vector of unique category values categ$vec2RR
+        fra2RR.mat <- cbind(rep(1,nrow(DF.2RR)),trim(as.matrix(DF.2RR)))
+        colnames(fra2RR.mat) <- c("Group",rater.name$r1,rater.name$r2)
+        fra2RR.mat[fra2RR.mat==""] <- NA
+        categ.init <- unique(na.omit(as.vector(unlist(fra2RR.mat[,2:ncol(fra2RR.mat)]))))
+        categ$vec2RR <- sort(categ.init)
+      } #if (input$chkGrp2RR){ #- 2raters/raw -- Group treatment
+
+      #7.2 Prepare the distribution of subjects by rater and category
+
+      fra2RR.mat <- fra2RR.mat[order(fra2RR.mat[,1]),] # sorting the matrix by group
+      groups.vec <- unique(na.omit(as.vector(unlist(fra2RR.mat[,1])))) # getting list of group names
+      grps.freqs <- plyr::count(as.data.frame(fra2RR.mat),colnames(fra2RR.mat)[1])
+      n.tot <- sum(as.numeric(as.matrix(grps.freqs)[,2]))
+      grps.freqs <- rbind(as.matrix(grps.freqs),c("Overall",n.tot))
+      nb.groups <- length(groups.vec)
+      #define row.pos1 and row.pos2, the first and last rows in the data table fra3RR.mat defining the group ratings. These 2 are needed to extract group data for subgroup analysis.
+      row.pos1 <- rep(1,(nb.groups+1))
+      row.pos2 <- rep(1,(nb.groups+1))
+      for(i in 1:(nb.groups+1)){
+        if (i<=1 | i>nb.groups){
+          row.pos1[i] <-1
+          row.pos2[i] <- as.numeric(grps.freqs[i,2])
+        }else{
+          row.pos1[i] <- row.pos2[i-1] + 1
+          row.pos2[i] <- row.pos2[i-1] + as.numeric(grps.freqs[i,2])
+        }
+      }
+      grps.freqs <- cbind(grps.freqs,row.pos1,row.pos2)
+      if (nb.groups==1) gIndex.max <- 1 #gIndex.max represents the total number of groups to process
+      else gIndex.max <- nb.groups+1 #The supplementary group here if the ALL group comprising all groups
+
+      coeff.cols[4] <- paste0(isolate(input$cmbclev2RR),"%conf.interv") # add the correct confidence level to the output table column labels
+
+
+          # if no subgroup analysis then one tableOutput "gridOut2RR" for example, is sufficient
+          # to output unweighted stats. If subgroup analysis is requested then we must build a
+          # tabsetpanel with one tabpanel element by group.
+
+      if (gIndex.max==1){
+        output$ui.dist2RR <- renderUI({
+          div(
+            fluidRow(column(width=1),column(width=11,uiOutput("r2name2RR"))),
+            fluidRow(column(width=1,uiOutput("r1name2RR")),column(width=11,tableOutput("gridCont2RR")))
+          )
+        })
+        output$ui.Unweigted2RR <- renderUI(tableOutput("gridOut2RR"))
+        if (input$optbench2RR !="none") output$ui.UnweigtBench2RR <- renderUI(tableOutput("gridOutBenchU2R"))
+        if (input$chkweighted2RR==TRUE){
+          output$ui.Weigted2RR <- renderUI(tableOutput("gridOutWted2R"))
+          if (input$optbench2RR !="none") output$ui.WeigtedBench2RR <- renderUI(tableOutput("gridOutBenchW2R"))
+        }
+        groups.vec.all <- groups.vec
+      }
+      else{ ### ELSE for if (gIndex.max==1){
+        groups.vec.all <- c(groups.vec,"ALL")
+        for (k in 1:gIndex.max){
+          if (k==1){
+            tab.elements.ct <- paste0("tabPanel('",groups.vec.all[k],"',br(),",
+                                      "fluidRow(column(width=1),column(width=11,uiOutput('r2name2RR.",k,"'))),",
+                                      "fluidRow(column(width=1,uiOutput('r1name2RR.",k,"')),column(width=11,tableOutput('gridCont2RR.",k,"')))),"
+                               )
+            tab.elements.uw <- paste0("tabPanel('",groups.vec.all[k], "',tableOutput('gridOut2RR.",k,"')),")
+            tab.elements.uwb <- paste0("tabPanel('",groups.vec.all[k], "',tableOutput('gridOutBenchU2R.",k,"')),")
+            tab.elements.wted <- paste0("tabPanel('",groups.vec.all[k], "',tableOutput('gridOutWted2R.",k,"')),")
+            tab.elements.wtedb <- paste0("tabPanel('",groups.vec.all[k], "',tableOutput('gridOutBenchW2R.",k,"')),")
+          }
+          else{
+            if (k==gIndex.max){
+              tab.elements.ct <- paste0(tab.elements.ct,
+                                    "tabPanel('",groups.vec.all[k], "',br(),",
+                                    "fluidRow(column(width=1),column(width=11,uiOutput('r2name2RR.",k,"'))),",
+                                    "fluidRow(column(width=1,uiOutput('r1name2RR.",k,"')),column(width=11,tableOutput('gridCont2RR.",k,"'))))"
+                                 )
+              tab.elements.uw <- paste0(tab.elements.uw,"tabPanel('",groups.vec.all[k], "',tableOutput('gridOut2RR.",k,"'))")
+              tab.elements.uwb <- paste0(tab.elements.uwb,"tabPanel('",groups.vec.all[k], "',tableOutput('gridOutBenchU2R.",k,"'))")
+              tab.elements.wted <- paste0(tab.elements.wted,"tabPanel('",groups.vec.all[k], "',tableOutput('gridOutWted2R.",k,"'))")
+              tab.elements.wtedb <- paste0(tab.elements.wtedb,"tabPanel('",groups.vec.all[k], "',tableOutput('gridOutBenchW2R.",k,"'))")
+            }
+            else{
+              tab.elements.ct <- paste0(tab.elements.ct,
+                                      "tabPanel('",groups.vec.all[k],"',br(),",
+                                      "fluidRow(column(width=1),column(width=11,uiOutput('r2name2RR.",k,"'))),",
+                                      "fluidRow(column(width=1,uiOutput('r1name2RR.",k,"')),column(width=11,tableOutput('gridCont2RR.",k,"')))),"
+                                 )
+              tab.elements.uw <- paste0(tab.elements.uw,"tabPanel('",groups.vec.all[k], "',tableOutput('gridOut2RR.",k,"')),")
+              tab.elements.uwb <- paste0(tab.elements.uwb,"tabPanel('",groups.vec.all[k], "',tableOutput('gridOutBenchU2R.",k,"')),")
+              tab.elements.wted <- paste0(tab.elements.wted,"tabPanel('",groups.vec.all[k], "',tableOutput('gridOutWted2R.",k,"')),")
+              tab.elements.wtedb <- paste0(tab.elements.wtedb,"tabPanel('",groups.vec.all[k], "',tableOutput('gridOutBenchW2R.",k,"')),")
+            }
+          }
+        } ## END OF if (gIndex.max==1){
+
+        tabset.distrib2RR <- paste0("output$ui.dist2RR <- renderUI({tabsetPanel(id = 'distrib.panel2RR',",tab.elements.ct,")})")
+        tabset.unweighted2RR <- paste0("output$ui.Unweigted2RR <- renderUI({tabsetPanel(id = 'unweighted.panel2RR',",tab.elements.uw,")})")
+        tabset.uwtedBench2RR <- paste0("output$ui.UnweigtBench2RR <- renderUI({tabsetPanel(id = 'unbench.panel2RR',",tab.elements.uwb,")})")
+        tabset.weighted2RR <- paste0("output$ui.Weigted2RR <- renderUI({tabsetPanel(id = 'weighted.panel2RR',",tab.elements.wted,")})")
+        tabset.wtedBench2RR <- paste0("output$ui.WeigtedBench2RR <- renderUI({tabsetPanel(id = 'wtedbench.panel2RR',",tab.elements.wtedb,")})")
+
+        eval(parse(text=tabset.distrib2RR))
+        eval(parse(text=tabset.unweighted2RR))
+        if (input$optbench2RR !="none") eval(parse(text=tabset.uwtedBench2RR))
+        if (input$chkweighted2RR==TRUE){
+          eval(parse(text=tabset.weighted2RR))
+          if (input$optbench2RR !="none") eval(parse(text=tabset.wtedBench2RR))
+
+        }else output$ui.Weigted2RR <- renderUI(HTML(""))
+      }
+
+            # Printing out the distribution of subjects by category
+
+      output$titDist2R <- renderUI(HTML("<b>DISTRIBUTION OF SUBJECTS BY RATER AND CATEGORY</b>"))
+      pdftit2RR1 <- textGrob("Distribution of Subjects by Rater and Category",gp=gpar(size=14,font=2))
+      pdftit2RR2 <- textGrob("INTER-RATER RELIABILITY COEFFICIENTS & ASSOCIATED PRECISION MEASURES",gp=gpar(size=14,font=2))
+      pdftit2RR3 <- textGrob("Unweighted Agreement Coefficients",gp=gpar(size=12,font=2))
+      if (input$optbench2RR !="none"){
+        bench.name <- switch (input$optbench2RR,
+                              lk = "Landis-Koch",
+                              altman = "Altman",
+                              fleiss = "Fleiss"
+        )
+        pdftit2RR4 <- textGrob(paste0(bench.name," Interpretation of Unweighted Agreement Coefficients"),gp=gpar(size=12,font=2))
+      }
+      pdftit2RR5 <- textGrob("Benchmarking Unweighted Coefficients using Cumulative Membership Probabilities",gp=gpar(size=12,font=3))
+      if (input$chkweighted2RR==TRUE){
+        Wt.title2RR <- WeightsGen.f(categ$vec2RR,input$chkweighted2RR,input$optWtype2RR,input$optweights2RR,"2R")$wtit
+        pdftit2RR6 <- textGrob(paste0("Weighted Agreement Coefficients (",Wt.title2RR,")"),gp=gpar(size=12,font=2))
+        if (input$optbench2RR !="none") pdftit2RR7 <- textGrob(paste0(bench.name," Interpretation of Weighted Agreement Coefficients"),gp=gpar(size=12,font=2))
+        pdftit2RR8 <- textGrob("Benchmarking Weighted Coefficients using Cumulative Membership Probabilities",gp=gpar(size=12,font=3))
+        pdftit2RR9 <- textGrob(Wt.title2RR)
+      }
+
+      #7.3 Treatment of the fra2RR.mat ratings one group at a time
+
+
+                # Printing out unweighted agreement coefficients and associated precision measures
+
+      output$hline2R <- renderUI(tags$hr(style="border-color: purple;"))
+      output$titCoeff2R <- renderUI(HTML("<b>INTER-RATER RELIABILITY COEFFICIENTS & ASSOCIATED PRECISION MEASURES</b>"))
+      output$titUnWt2R <- renderUI(HTML("Unweighted Agreement Coefficients"))
+
+                # If benchmarking requested then print the corresponding titles
+
+      if (input$optbench2RR !="none"){
+        output$hline.bench2R <- renderUI(tags$hr(style="border-color: purple;"))
+        bench.name <- switch (input$optbench2RR,
+                              lk = "Landis-Koch",
+                              altman = "Altman",
+                              fleiss = "Fleiss"
+        )
+        output$titBench1U2R <- renderUI(HTML("<b>",paste0(bench.name," Interpretation of Unweighted Agreement Coefficients</b>")))
+        output$titBench2U2R <- renderUI(HTML("Benchmarking Unweighted Coefficients using Cumulative Membership Probabilities"))
+        bench.request2R$BR <- TRUE #Indicator that a benchmarking has been printed
+      }else{
+        if (bench.request2R$BR){
+          bench.request2R$BR <- FALSE
+          output$ui.UnweigtBench2RR <- renderUI(HTML(""))
+        }
+        output$hline.bench2R <- renderUI(HTML(""))
+        output$titBench1U2R <- renderUI(HTML(""))
+        output$titBench2U2R <- renderUI(HTML(""))
+        output$titBench1W2R <- renderUI(HTML(""))
+        output$titBench2W2R <- renderUI(HTML(""))
+      }
+
+                # If weighted analysis for 2-rater analysis is requested
+
+      if (input$chkweighted2RR==TRUE){
+        output$hlineWted2R <- renderUI(tags$hr(style="border-color: purple;"))
+        #          pdftit1RC2W<-textGrob(paste0("Weighted Agreement Coefficients / ",isolate(Weights2C.f()$wtit)),gp=gpar(size=12,font=3))
+        Weights2RR <- WeightsGen.f(categ$vec2RR,input$chkweighted2RR,input$optWtype2RR,input$optweights2RR,"2R")$wmat
+        Wt.title2RR <- WeightsGen.f(categ$vec2RR,input$chkweighted2RR,input$optWtype2RR,input$optweights2RR,"2R")$wtit
+        output$titWted2R <- renderUI(HTML(paste0("Weighted Agreement Coefficients (",Wt.title2RR,")")))
+        # Output the weight matrix
+        output$titWtype2R <- renderUI(HTML(Wt.title2RR))
+        Weights2RR.fra <- as.data.frame(formatC(Weights2RR,format="f",digits=4)) #Printing the weight matrix used to compute weighted agreement coefficients
+        colnames(Weights2RR.fra) <- categ$vec2RR
+        rownames(Weights2RR.fra) <- categ$vec2RR
+        output$gridOutWeights2R = renderTable(Weights2RR.fra,rownames = TRUE,colnames = TRUE,bordered = TRUE,spacing = 'xs')
+
+        # Processing the benchmarking of the weighted agreement coefficients if necessary
+        if (input$optbench2RR !='none'){
+          output$titBench1W2R <- renderUI(HTML("<b>",paste0(bench.name," Interpretation of Weighted Agreement Coefficients</b>")))
+          output$titBench2W2R <- renderUI(HTML("Benchmarking Weighted Coefficients using Cumulative Membership Probabilities"))
+          #            dftit3RC2W<-textGrob(paste0(bench.name," Interpretation of Weighted Agreement Coefficients</b>"),gp=gpar(size=12,font=3))
+          bench.request.w2R$WBR <- TRUE
+          output$gridOutBenchW2R=renderTable(WBenchTable,bordered = TRUE,spacing = 'xs')
+        }else{
+          if (bench.request.w2R$WBR){
+            output$ui.WeigtedBench2RR <- renderUI(HTML(""))
+            bench.request.w2R$WBR <- FALSE
+          }
+          output$titBench1W2R <- renderUI(HTML(""))
+          output$titBench2W2R <- renderUI(HTML(""))
+          if (bench.request.w2R$WBR){
+            output$gridOutBenchW2R=renderTable(data.frame())
+          }
+        }
+
+      }else{
+        #ItemsWeighted$tab<-NULL
+        output$gridOutWted2R <- renderTable(data.frame())
+        output$titWted2R <- renderUI(HTML(""))
+        output$titWtype2R <- renderUI(HTML(""))
+        output$gridOutWeights2R <- renderTable(data.frame())
+      } #End of weighted analysis
+
+            # Processing all subject groups, one at a time
+
+      out.tables <- lapply(1:gIndex.max, function(i){
+          # Extract ratings associated with current group
+          gIndex1 <- as.numeric(grps.freqs[i,3])
+          gIndex2 <- as.numeric(grps.freqs[i,4])
+          frame.i <- fra2RR.mat[gIndex1:gIndex2,2:ncol(fra2RR.mat)]
+
+          #computing the distribution of subjects by category for the current group
+
+          dist.subjects <- table(frame.i[,1],frame.i[,2],exclude = NULL)
+          #rownames(dist.subjects) <- categ$vec2RR
+          if (is.numeric(as.vector(unlist(frame.i)))) rownames(dist.subjects) <- as.character(colnames(dist.subjects))
+          dist.subjects <- cbind(dist.subjects,margin.table(dist.subjects,1))
+          dist.subjects <- rbind(dist.subjects,margin.table(dist.subjects,2))
+          colnames(dist.subjects)[length(colnames(dist.subjects))]<-"Total"
+          rownames(dist.subjects)[length(rownames(dist.subjects))]<-"Total"
+          colnames(dist.subjects)[colnames(dist.subjects)==""]<-"Missing"
+          colnames(dist.subjects)[is.na(colnames(dist.subjects))] <- "Missing"
+          rownames(dist.subjects)[rownames(dist.subjects)==""]<-"Missing"
+          rownames(dist.subjects)[is.na(rownames(dist.subjects))] <- "Missing"
+
+          fra.Coeff2RR <- coefficients3RR.f(identity.weights(categ$vec2RR),categ$vec2RR,frame.i,
+                                            input$chkkappa2RR, input$chkac12RR, input$chkpi2RR,
+                                            input$chkalpha2RR, input$chkkbp2RR)[,c(1,4:7)]
+
+          colnames(fra.Coeff2RR) <- coeff.cols
+          if (gIndex.max==1){
+            output$r1name2RR <- renderUI(HTML(paste0("<b>",colnames(fra2RR.mat)[2],"</b>")))
+            output$r2name2RR <- renderUI(HTML(paste0("<b>",colnames(fra2RR.mat)[3],"</b>")))
+
+            output$gridCont2RR <- renderTable(dist.subjects,rownames = TRUE,bordered = TRUE,spacing = 'xs')
+            output$gridOut2RR <- renderTable(fra.Coeff2RR,rownames = FALSE,bordered = TRUE,spacing = 'xs')
+
+            if (input$optbench2RR !="none"){# Benchmarking unweighted agreement coefficients
+              DFR <- benchmark.table(fra.Coeff2RR,"2R")
+              output$gridOutBenchU2R = renderTable(DFR,bordered = TRUE,spacing = 'xs')
+            }else{
+              if (bench.request2R$BR){
+                output$gridOutBenchU2R = renderTable(data.frame())
+                output$gridOutBenchW2R = renderTable(data.frame())
+              }
+            }#if (input$optbench2RR !="none"){# Benchmarking unweighted agreement coefficients
+
+            if (input$chkweighted2RR==TRUE){# Computing the weighted agreement coefficients for 2-rater analysis
+              DF.Weighted2RR <- coefficients3RR.f(Weights2RR,categ$vec2RR,frame.i,
+                                                  input$chkkappa2RR, input$chkac12RR, input$chkpi2RR,
+                                                  input$chkalpha2RR, input$chkkbp2RR)[,c(1,4:7)] #compute weighted coefficients
+              colnames(DF.Weighted2RR) <- coeff.cols
+              output$gridOutWted2R <- renderTable(DF.Weighted2RR,bordered = TRUE,spacing = 'xs') # Printing out weighted coefficients
+              # Processing the benchmarking of the weighted agreement coefficients if necessary
+              if (isolate(input$optbench2RR) !='none'){
+                WBenchTable <- benchmark.table(DF.Weighted2RR,"2R")
+                output$gridOutBenchW2R=renderTable(WBenchTable,bordered = TRUE,spacing = 'xs')
+              }
+            }#End of weighted analysis/if (input$chkweighted2RR==TRUE){# Computing the weighted agreement coefficients for 2-rater analysis
+          }
+          else{ #if (gIndex.max==1){
+            output[[paste0('r1name2RR.',i)]] <- renderUI(HTML(paste0("<b>",colnames(fra2RR.mat)[2],"</b>")))
+            output[[paste0('r2name2RR.',i)]] <- renderUI(HTML(paste0("<b>",colnames(fra2RR.mat)[3],"</b>")))
+            output[[paste0('gridCont2RR.',i)]] <- renderTable(dist.subjects,rownames = TRUE,bordered = TRUE,spacing = 'xs')
+            output[[paste0('gridOut2RR.',i)]] <- renderTable(fra.Coeff2RR,rownames = FALSE,bordered = TRUE,spacing = 'xs')
+            if (input$optbench2RR !="none"){
+              DFR <- benchmark.table(fra.Coeff2RR,"2R")
+              output[[paste0('gridOutBenchU2R.',i)]] <- renderTable(DFR,rownames = FALSE,bordered = TRUE,spacing = 'xs')
+            }
+            if (input$chkweighted2RR==TRUE){# Computing the weighted agreement coefficients for 2-rater analysis
+              DF.Weighted2RR <- coefficients3RR.f(Weights2RR,categ$vec2RR,frame.i,
+                                                  input$chkkappa2RR, input$chkac12RR, input$chkpi2RR,
+                                                  input$chkalpha2RR, input$chkkbp2RR)[,c(1,4:7)] #compute weighted coefficients
+              colnames(DF.Weighted2RR) <- coeff.cols
+              output[[paste0('gridOutWted2R.',i)]] <- renderTable(DF.Weighted2RR,bordered = TRUE,spacing = 'xs') # Printing out weighted coefficients
+              # Processing the benchmarking of the weighted agreement coefficients if necessary
+              if (input$optbench2RR !='none'){
+                WBenchTable <- benchmark.table(DF.Weighted2RR,"2R")
+                output[[paste0('gridOutBenchW2R.',i)]] <- renderTable(WBenchTable,bordered = TRUE,spacing = 'xs')
+              }
+            }#End of weighted analysis/if (input$chkweighted2RR==TRUE){# Computing the weighted agreement coefficients for 2-rater analysis
+          }
+          eval(parse(text=paste0("list(",output.tables2RR.f(),")"))) #Here is where the list of output tables is created
+      }) #lapply(1:gIndex.max, function(i) /END of sub-group treatment
+
+      PDF.exportCAC.fn(out.tables,"ExportPDF2RR.CAC",groups.vec.all,categ$vec2RR,
+                       pdftit2RR1,pdftit2RR2,pdftit2RR3,
+                       pdftit2RR4,pdftit2RR5,pdftit2RR6,
+                       pdftit2RR7,pdftit2RR8,pdftit2RR9)
+      isprinted2RR.CAC$ct<-TRUE
+    }) #END OF EXECUTION:-----------------------------------------------------> observeEvent(input$cmdExecute2RR.CAC,{
+
+    observeEvent(input$reset2RR, {
+      reset("file2RR")
+    })
+
+    #
+    # Options (ICC) for 2 raters/raw data
+    # -----------------------------------
+
+    titANOVA2RR <-reactiveValues(tit="",inter=NULL,intra=NULL,pval.r=NULL,pval.a=NULL)
+    observeEvent(input$cmdExecute2RR.ICC,{
+      updateTabsetPanel(session, "TabId2RR", selected = "panel6R2R") # Once the execute button is pressed the "Output" tabpanel must be selected
+      colnames(dfra2RR$data) <- NULL
+
+      #####  Printing the main titles
+
+      if (input$optIccModel2R=="model1A"){
+        shinyjs::disable("chkTypeICC2R1Ar")
+        shinyjs::disable("chkTypeICC2R1Aa")
+        titANOVA2RR$tit <- "ANOVA: 1-Way Random Subject Effects Model"
+        titANOVA2RR$inter="INTER-RATER RELIABILITY"
+        titANOVA2RR$intra=NULL
+        titANOVA2RR$pval.r="P-value/Inter-rater reliability"
+        titANOVA2RR$pval.a=NULL
+      }
+      else{
+        if (input$optIccModel2R=="model1B"){
+          shinyjs::disable("chkTypeICC2R1Ba")
+          shinyjs::disable("chkTypeICC2R1Br")
+          titANOVA2RR$tit <- "ANOVA: 1-Way Random Rater Effects Model"
+          titANOVA2RR$inter=NULL
+          titANOVA2RR$intra="INTRA-RATER RELIABILITY"
+          titANOVA2RR$pval.r=NULL
+          titANOVA2RR$pval.a="P-value/Intra-rater reliability"
+        }
+        else{
+          if (input$optIccModel2R=="model2or3" & input$optICC2R.2Way=="model2"){
+            if (input$chkInteraction2RR) titANOVA2RR$tit <- "ANOVA: 2-Way Random Rater Effects ANOVA Model with Interaction"
+            else titANOVA2RR$tit <- "ANOVA: 2-Way Random Rater Effects ANOVA Model without Interaction"
+          }
+          else{
+            if (input$optIccModel2R=="model2or3" & input$optICC2R.2Way=="model3"){
+              if (input$chkInteraction2RR) titANOVA2RR$tit <- "ANOVA: 2-Way Mixed ANOVA Model with Interaction (Random Subject & Fixed Rater Effects)"
+              else titANOVA2RR$tit <- "ANOVA: 2-Way Mixed ANOVA Model without Interaction (Random Subject & Fixed Rater Effects)"
+            }
+          }
+          if (input$optIccModel2R=="model2or3"){
+            if (input$chkTypeICC2R2r){
+              shinyjs::enable("chkTypeICC2R2a")
+              titANOVA2RR$inter="INTER-RATER RELIABILITY"
+              titANOVA2RR$pval.r="P-value/Inter-rater reliability"
+            }
+            else{
+              shinyjs::disable("chkTypeICC2R2a")
+              titANOVA2RR$inter=NULL
+              titANOVA2RR$pval.r=NULL
+              titANOVA2RR$intra="INTRA-RATER RELIABILITY"
+              titANOVA2RR$pval.a="P-value/Intra-rater reliability"
+            }
+            if (input$chkTypeICC2R2a){
+              shinyjs::enable("chkTypeICC2R2r")
+              titANOVA2RR$intra="INTRA-RATER RELIABILITY"
+              titANOVA2RR$pval.a="P-value/Intra-rater reliability"
+            }
+            else{
+              shinyjs::disable("chkTypeICC2R2r")
+              titANOVA2RR$intra  = NULL
+              titANOVA2RR$pval.a = NULL
+              titANOVA2RR$inter="INTER-RATER RELIABILITY"
+              titANOVA2RR$pval.r="P-value/Inter-rater reliability"
+            }
+          }
+        }
+      }
+      output$titANOVA2RR <- renderUI(HTML(paste0("<font size=2 color='red'>",titANOVA2RR$tit,"</font>")))
+
+      ######## collecting rating data
+
+             # Getting column labels
+      nratings.r1.row2 <- nratings.r1$row2
+      nratings.r2.row2 <- nratings.r2$row2
+      if (input$header2RR1){
+        rater.name$r1 <- as.vector(unlist(dfra2RR$data[1,nratings.r1$colno]))
+        if (nratings.r1$row1==1) nratings.r1.row1 <- nratings.r1$row1+1
+        else nratings.r1.row1 <- nratings.r1$row1
+      }else{
+        rater.name$r1 <- "Rater1"
+        nratings.r1.row1 <- nratings.r1$row1
+      }
+      if (input$header2RR2){
+        rater.name$r2 <- as.vector(unlist(dfra2RR$data[1,nratings.r2$colno]))
+        if (nratings.r2$row1==1) nratings.r2.row1 <- nratings.r2$row1 + 1
+        else nratings.r2.row1 <- nratings.r2$row1
+      } else{
+        rater.name$r2 <- "Rater2"
+        nratings.r2.row1 <- nratings.r2$row1
+      }
+      if (input$header2RTar) rater.name$tar <- as.vector(unlist(dfra2RR$data[1,n2RR.tar$colno]))
+      else rater.name$tar <- "Target"
+
+            # Getting column data (group, target and rating values)
+      if (input$chkGrp2RR){# collecting group information
+        if (input$header2RGR){
+          rater.name$grp <- as.vector(unlist(dfra2RR$data[1,n2RR.grp$colno]))
+          if (isolate(n2RR.grp$row1==1)) n2RR.grp.row1 <- n2RR.grp$row1+1
+          else n2RR.grp.row1 <- n2RR.grp$row1
+        }else{
+          n2RR.grp.row1 <- n2RR.grp$row1
+          rater.name$grp <- "Group"
+        }#if (input$header2RRGR)
+        min.row1 <- min(n2RR.grp.row1,n2RR.tar$row1,nratings.r1.row1,nratings.r2.row1)
+        max.row1 <- max(n2RR.grp.row1,n2RR.tar$row1,nratings.r1.row1,nratings.r2.row1)
+        min.row2 <- min(n2RR.grp$row2,n2RR.tar$row2,nratings.r1.row2,nratings.r2.row2)
+        max.row2 <- max(n2RR.grp$row2,n2RR.tar$row2,nratings.r1.row2,nratings.r2.row2)
+        DF.2RR <- cbind(dfra2RR$data[max.row1:min.row2,n2RR.grp$colno],
+                        dfra2RR$data[max.row1:min.row2,n2RR.tar$colno],
+                        dfra2RR$data[max.row1:min.row2,c(nratings.r1$colno,nratings.r2$colno)])
+        colnames(DF.2RR) <- c(rater.name$grp,rater.name$tar,rater.name$r1,rater.name$r2)
+      }else{
+        min.row1 <- min(n2RR.tar$row1,nratings.r1.row1,nratings.r2.row1)
+        max.row1 <- max(n2RR.tar$row1,nratings.r1.row1,nratings.r2.row1)
+        min.row2 <- min(n2RR.tar$row2,nratings.r1.row2,nratings.r2.row2)
+        max.row2 <- max(n2RR.tar$row2,nratings.r1.row2,nratings.r2.row2)
+        DF.2RR <- cbind(rep(1,(min.row2-max.row1+1)),
+                        dfra2RR$data[max.row1:min.row2,n2RR.tar$colno],
+                        dfra2RR$data[max.row1:min.row2,c(nratings.r1$colno,nratings.r2$colno)])
+        colnames(DF.2RR) <- c("Group",rater.name$tar,rater.name$r1,rater.name$r2)
+      #
+      #
+      } # End of if (input$chkGrp3RR){
+
+      output$titMain2RR.icc <- renderUI(HTML(paste0("<font size=4 color='red'>Intraclass Correlation Coefficients/ICC (Time:",Sys.time(),")</font>")))
+      output$titModel2RR.icc <- renderUI(HTML(paste0("<b><font size=3>",titANOVA3RR$tit,"</font></b>")))
+      output$hline1.2RR.icc <- renderUI(tags$hr(style="border-color: purple;"))
+      output$titRaters2RR.icc <- renderUI(HTML(paste0("<i><font size=2>(Participating Raters: ",rater.name$r1,",",rater.name$r2),")</font></i>"))
+      output$tit.descrip2RR.icc <- renderUI(HTML(paste0("<b><font size=3> Descriptive Statistics</font></b>")))
+
+      #gridOut2RR.descrip.icc
+
+      output$tit.varcomp2RR.icc <- renderUI(HTML(paste0("<b><font size=3> Variance Components</font></b>")))
+      #gridOut2RR.varcomp.icc
+
+      if (!is.null(titANOVA2RR$inter)) output$tit.inter2RR.icc <- renderUI(HTML(paste0("<b><font size=3>",titANOVA2RR$inter,"</font></b>")))
+      else output$tit.inter2RR.icc <- renderUI(return())
+      if (!is.null(titANOVA2RR$intra)) output$tit.intra2RR.icc <- renderUI(HTML(paste0("<b><font size=3>",titANOVA2RR$intra,"</font></b>")))
+      else output$tit.intra2RR.icc <- renderUI(return())
+
+      DF.2RR <- DF.2RR[order(DF.2RR[,1]),] # sorting the matrix by group
+      groups.vec <- unique(na.omit(as.vector(unlist(DF.2RR[,1])))) # getting list of group names
+      grps.freqs <- plyr::count(DF.2RR,colnames(DF.2RR)[1])
+      n.tot <- sum(as.numeric(as.matrix(grps.freqs)[,2]))
+      grps.freqs <- rbind(as.matrix(grps.freqs),c("Overall",n.tot))
+      nb.groups <- length(groups.vec)
+
+      #define row.pos1 and row.pos2, the first and last rows in the data table fra3RR.mat defining the group ratings. These 2 are needed to extract group data for subgroup analysis.
+      row.pos1 <- rep(1,(nb.groups+1))
+      row.pos2 <- rep(1,(nb.groups+1))
+      for(i in 1:(nb.groups+1)){
+        if (i<=1 | i>nb.groups){
+          row.pos1[i] <-1
+          row.pos2[i] <- as.numeric(grps.freqs[i,2])
+        }else{
+          row.pos1[i] <- row.pos2[i-1] + 1
+          row.pos2[i] <- row.pos2[i-1] + as.numeric(grps.freqs[i,2])
+        }
+      }
+      grps.freqs <- cbind(grps.freqs,row.pos1,row.pos2)
+      if (nb.groups==1) gIndex.max <- 1 #gIndex.max represents the total number of groups to process
+      else gIndex.max <- nb.groups+1 #The supplementary group here if the ALL group comprising all groups
+
+      #
+      #---  ICC Calculation: Processing all groups of subjects sequentially
+      #
+
+      #g.colnames <- sapply(1:gIndex.max,function(x) paste0("statval",x))
+      conf.lev = as.numeric(input$si.CI2R.icc)/100
+      statname<-c("Number of subjects/targets",
+                  "Number of raters/observers",
+                  "Max replicates per subject & rater",
+                  "Min replicates per subject & rater",
+                  "Total number of measurements",
+                  "Mean value of analytic variable",
+                  "Subject variance",
+                  "Rater variance",
+                  "Error variance",
+                  "Subject-rater interaction",
+                  "Intraclass Correlation", #icc.r
+                  "Intraclass Correlation", #icc.a
+                  paste0(input$si.CI2R.icc,"% Confidence Interval"), #---inter-rater",
+                  "0.0",
+                  "0.1",
+                  "0.3",
+                  "0.5",
+                  "0.7",
+                  "0.9",
+                  paste0(input$si.CI2R.icc,"% Confidence Interval"), #/intra-rater",
+                  "0.0",
+                  "0.1",
+                  "0.3",
+                  "0.5",
+                  "0.7",
+                  "0.9")
+      df.descriptive <- data.frame(statname,matrix(0,26,gIndex.max))
+      if (nb.groups==1){
+        ColNamesPRT <- FALSE
+        colnames(df.descriptive) <- c("Descriptive Statistics", "Estimate")
+      }
+      else{
+        ColNamesPRT <- TRUE
+        colnames(df.descriptive) <- c("Descriptive Statistics",groups.vec,"Overall")
+      }
+
+      ### Preparing the titles to be used in the PDF export file
+      ##--> font: standard: 1 = plain, 2 = bold, 3 = italic, 4 = bold italic
+      pdftit2RR0.ICC <- textGrob(paste(sapply(1:100,function(x) "x"),collapse=""),gp=gpar(size=14,font=2)) #this is a dummy title used to set the maximum width of the PDF report
+      pdftit2RR1.ICC <- textGrob("MODULE: ICC - Intraclass Correlation",gp=gpar(size=14,font=2))
+      pdftit2RR2.ICC <- textGrob(titANOVA2RR$tit,gp=gpar(size=14,font=2))
+      pdftit2RR3.ICC <- textGrob(paste0("(Participating Raters: ",rater.name$r1,",",rater.name$r2,")"),gp=gpar(size=12,font=3))
+      pdftit2RR4.ICC <- textGrob("Descriptive Statistics",gp=gpar(size=11,font=4))
+      pdftit2RR5.ICC <- textGrob("Variance Components",gp=gpar(size=11,font=4))
+      if (!is.null(titANOVA2RR$inter)){
+        pdftit2RR6.ICC <- textGrob("Inter-rater reliability",gp=gpar(size=10,font=2))
+        pdftit2RR6r.ICC <- textGrob(titANOVA2RR$pval.r,gp=gpar(size=10,font=2))
+      }else{
+        pdftit2RR6.ICC <- NULL
+        pdftit2RR6r.ICC <- NULL
+      }
+      if (!is.null(titANOVA2RR$intra)){
+        pdftit2RR7.ICC <- textGrob("Intra-rater reliability",gp=gpar(size=10,font=2))
+        pdftit2RR7a.ICC <- textGrob(titANOVA2RR$pval.a,gp=gpar(size=10,font=2))
+      }else{
+        pdftit2RR7.ICC <- NULL
+        pdftit2RR7a.ICC <- NULL
+      }
+
+      #--  Computing descriptive statistics  ----
+
+      d.stats <- sapply(1:gIndex.max, function(i){
+        # Extract ratings associated with current group
+        gIndex1 <- as.numeric(grps.freqs[i,3])
+        gIndex2 <- as.numeric(grps.freqs[i,4])
+        frame.i <- DF.2RR[gIndex1:gIndex2,2:ncol(DF.2RR)]
+        if (input$optIccModel2R=="model1A"){
+          icc.df <- icc1a.fn(frame.i)
+          ci.r.df <- ci.ICC1a(frame.i,conflev=conf.lev)
+          pval.r.df <- pval.ICC1a(frame.i)
+          var.stats <- round(c(icc.df$sig2s,0,icc.df$sig2e,0),4)
+          coeff.stats <-round(c(icc.df$icc1a,0),4)
+          ci.inter.stats <- paste0("(",round(ci.r.df$lcb,4)," to ",round(ci.r.df$ucb,4),")")
+          pval.inter.stats <- pval.r.df$pval
+          ci.intra.stats <- ""
+          pval.intra.stats <-rep(0,6)
+        }else{
+          if (input$optIccModel2R=="model1B"){
+            icc.df <- icc1b.fn(frame.i)
+            ci.a.df <- ci.ICC1b(frame.i,conflev=conf.lev)
+            pval.a.df <- pval.ICC1b(frame.i)
+            var.stats <- round(c(0,icc.df$sig2r,icc.df$sig2e,0),4)
+            coeff.stats <-round(c(0,icc.df$icc1b),4)
+            ci.inter.stats <- ""
+            pval.inter.stats <- rep(0,6)
+            ci.intra.stats <- paste0("(",round(ci.a.df$lcb,4)," to ",round(ci.a.df$ucb,4),")")
+            pval.intra.stats <- pval.a.df$pval
+          }else{
+            if (input$optIccModel2R=="model2or3" & input$optICC2R.2Way=="model2"){
+              if (input$chkInteraction2RR){
+                icc.df <- icc2.inter.fn(frame.i)
+                ci.r.df <- ci.ICC2r.inter(frame.i,conflev=conf.lev)
+                ci.a.df <- ci.ICC2a.inter(frame.i,conflev=conf.lev)
+                pval.r.df <- pval.ICC2r.inter(frame.i)
+                pval.a.df <- pvals.ICC2a.inter(frame.i,gam.zero = c(0,0.1,0.3,0.5,0.7,0.9))
+                var.stats <- round(c(icc.df$sig2s,icc.df$sig2r,icc.df$sig2e,icc.df$sig2sr),4)
+                coeff.stats <- round(c(icc.df$icc2r,icc.df$icc2a),4)
+                ci.inter.stats <- paste0("(",round(ci.r.df$lcb,4)," to ",round(ci.r.df$ucb,4),")")
+                pval.inter.stats <- pval.r.df$pval
+                ci.intra.stats <- paste0("(",round(ci.a.df$lcb,4)," to ",round(ci.a.df$ucb,4),")")
+                pval.intra.stats <- pval.a.df$pval
+              }
+              else{
+                icc.df <- icc2.nointer.fn(frame.i)
+                ci.r.df <- ci.ICC2r.nointer(frame.i,conflev=conf.lev)
+                ci.a.df <- ci.ICC2a.nointer(frame.i,conflev=conf.lev)
+                pval.r.df <- pvals.ICC2r.nointer(frame.i,rho.zero = c(0,0.1,0.3,0.5,0.7,0.9))
+                pval.a.df <- pvals.ICC2a.nointer(frame.i,gam.zero = c(0,0.1,0.3,0.5,0.7,0.9))
+                var.stats<-round(c(icc.df$sig2s,icc.df$sig2r,icc.df$sig2e,0),4)
+                coeff.stats <- round(c(icc.df$icc2r,icc.df$icc2a),4)
+                ci.inter.stats <- paste0("(",round(ci.r.df$lcb,4)," to ",round(ci.r.df$ucb,4),")")
+                pval.inter.stats <- pval.r.df$pval
+                ci.intra.stats <- paste0("(",round(ci.a.df$lcb,4)," to ",round(ci.a.df$ucb,4),")")
+                pval.intra.stats <- pval.a.df$pval
+              }
+            }else{
+              if (input$optICC2R.2Way=="model3"){
+                if (input$chkInteraction2RR){
+                  icc.df <- icc3.inter.fn(frame.i)
+                  ci.r.df <- ci.ICC3r.inter(frame.i,conflev=conf.lev)
+                  ci.a.df <- ci.ICC3a.inter(frame.i,conflev=conf.lev)
+                  pval.r.df <- pvals.ICC3r.inter(frame.i,rho.zero = c(0,0.1,0.3,0.5,0.7,0.9))
+                  pval.a.df <- pvals.ICC3a.inter(frame.i,gam.zero = c(0,0.1,0.3,0.5,0.7,0.9))
+                  var.stats <- round(c(icc.df$sig2s,0,icc.df$sig2e,icc.df$sig2sr),4)
+                  coeff.stats <- round(c(icc.df$icc2r,icc.df$icc2a),4)
+                  ci.inter.stats <- paste0("(",round(ci.r.df$lcb,4)," to ",round(ci.r.df$ucb,4),")")
+                  pval.inter.stats <- pval.r.df$pval
+                  ci.intra.stats <- paste0("(",round(ci.a.df$lcb,4)," to ",round(ci.a.df$ucb,4),")")
+                  pval.intra.stats <- pval.a.df$pval
+                }
+                else{
+                  icc.df <- icc3.nointer.fn(frame.i)
+                  ci.r.df <- ci.ICC3r.nointer(frame.i,conflev=conf.lev)
+                  pval.r.df <- pvals.ICC3r.nointer(frame.i,rho.zero = c(0,0.1,0.3,0.5,0.7,0.9))
+                  var.stats <-round(c(icc.df$sig2s,0,icc.df$sig2e,0),4)
+                  coeff.stats <- round(c(icc.df$icc2r,icc.df$icc2a),4)
+                  ci.inter.stats <- paste0("(",round(ci.r.df$lcb,4)," to ",round(ci.r.df$ucb,4),")")
+                  pval.inter.stats <- pval.r.df$pval
+                  ci.intra.stats <- "N/A"
+                  pval.intra.stats <- rep(0,6)
+                }
+              }
+            }
+          }
+        }
+        g.stats <- c(icc.df$n, icc.df$r,icc.df$max.rep,icc.df$min.rep,icc.df$Mtot,round(icc.df$ov.mean,3),
+                     var.stats,coeff.stats,ci.inter.stats,pval.inter.stats,ci.intra.stats,pval.intra.stats)
+        return(g.stats)
+      }) # d.stats <- sapply(1:gIndex.max, function(i){
+
+      df.descriptive[,c(2:(gIndex.max+1))] <- as.data.frame(d.stats)
+
+      #Extract and apply scientific format to p-values associated with inter-rater reliability
+      x1.pvals <- as.matrix(df.descriptive[14:19,c(2:(gIndex.max+1))]) #Extract p-values
+      x2.pvals <- formatC(apply(x1.pvals,2,as.numeric),format="e",digits=3) #apply scientific format to p-values
+      xlabels <- sapply(df.descriptive[14:19,1],function (y) if(class(y)=="factor" ) as.character(y) else y) #create p-value labels
+      pval.inter.df <- cbind(xlabels,x2.pvals)
+      colnames(pval.inter.df)[1] <- "Null Value"
+      if (nb.groups==1) colnames(pval.inter.df)[2] <- "P-value"
+
+      #Extract and apply scientific format to p-values associated with intra-rater reliability
+      x1.pvals <- as.matrix(df.descriptive[21:26,c(2:(gIndex.max+1))]) #Extract p-values
+      x2.pvals <- formatC(apply(x1.pvals,2,as.numeric),format="e",digits=3) #apply scientific format to p-values
+      xlabels <- sapply(df.descriptive[21:26,1],function (y) if(class(y)=="factor" ) as.character(y) else y) #create p-value labels
+      pval.intra.df <- cbind(xlabels,x2.pvals)
+      colnames(pval.intra.df)[1] <- "Null Value"
+      if (nb.groups==1) colnames(pval.intra.df)[2] <- "P-value"
+
+      ### Computing confidence intervals
+      coeff.inter.df <-  rbind(df.descriptive[11,],df.descriptive[13,])
+      coeff.intra.df <-  rbind(df.descriptive[12,],df.descriptive[20,])
+      colnames(coeff.inter.df)[1] <- ""
+      colnames(coeff.intra.df)[1] <- ""
+      if (input$optIccModel2R=="model1A")varcom.df <- rbind(df.descriptive[7,],df.descriptive[9,])
+      else{
+        if (input$optIccModel2R=="model1B")varcom.df <- rbind(df.descriptive[8,],df.descriptive[9,])
+        else{
+          if (input$optIccModel2R=="model2or3" & input$optICC2R.2Way=="model2"){
+            if (input$chkInteraction2RR)varcom.df <- df.descriptive[7:10,]
+            else varcom.df <- df.descriptive[7:9,]
+          }else{
+            if (input$optICC2R.2Way=="model3"){
+              if (input$chkInteraction2RR)varcom.df <- rbind(df.descriptive[7,],df.descriptive[9:10,])
+              else varcom.df <- rbind(df.descriptive[7,],df.descriptive[9,])
+            } #if (input$optICC2R.2Way=="model3"){
+          }#if (input$optIccModel2R=="model2or3" & input$optICC2R.2Way=="model2"){
+        }
+      }
+      output$gridOut2RR.descrip.icc <- renderTable(df.descriptive[1:6,],rownames = FALSE,colnames = ColNamesPRT,bordered = TRUE,spacing = 'xs',striped = TRUE)
+      output$gridOut2RR.varcomp.icc <- renderTable(varcom.df,rownames = FALSE,colnames = ColNamesPRT,bordered = TRUE,spacing = 'xs',striped = TRUE)
+
+      descrip2RR.ICC <- df.descriptive[1:6,]
+      varcomp2RR.ICC <- varcom.df
+      colnames(varcomp2RR.ICC)[1] <- "Variance components"
+      out2RR.ICC.tables <- c("descrip2RR.ICC,varcomp2RR.ICC") #out2RR.ICC.tables contains the list of tables produced that will be exported to the PDF file.
+      if (!is.null(titANOVA2RR$inter)){
+        output$gridOut2RR.inter.icc <- renderTable(coeff.inter.df,rownames = FALSE,colnames = ColNamesPRT,bordered = TRUE,spacing = 'xs',striped = TRUE)
+        output$tit2RR.pval.inter.icc <- renderUI(HTML(paste0("<i><font size=3> P-value for various ICC/Inter-rater levels</font></i>")))
+        output$gridOut2RR.pval.inter.icc  <- renderTable(pval.inter.df,rownames = FALSE,colnames = TRUE,bordered = TRUE,spacing = 'xs',striped = TRUE)
+        out2RR.ICC.tables <- paste0(out2RR.ICC.tables,",coeff.inter.df,pval.inter.df")
+      }else{
+        output$gridOut2RR.inter.icc <- renderTable(return())
+        output$tit2RR.pval.inter.icc <- renderUI(return())
+        output$gridOut2RR.pval.inter.icc <- renderUI(return())
+      }
+      if (!is.null(titANOVA2RR$intra)){
+        output$gridOut2RR.intra.icc <- renderTable(coeff.intra.df,rownames = FALSE,colnames = ColNamesPRT,bordered = TRUE,spacing = 'xs',striped = TRUE)
+        output$tit2RR.pval.intra.icc <- renderUI(HTML(paste0("<i><font size=3> P-value for various ICC/Intra-rater levels</font></i>")))
+        output$gridOut2RR.pval.intra.icc  <- renderTable(pval.intra.df,rownames = FALSE,colnames = TRUE,bordered = TRUE,spacing = 'xs',striped = TRUE)
+        out2RR.ICC.tables <- paste0(out2RR.ICC.tables,",coeff.intra.df,pval.intra.df")
+      }else{
+        output$gridOut2RR.intra.icc <- renderTable(return())
+        output$tit2RR.pval.intra.icc <- renderUI(return())
+        output$gridOut2RR.pval.intra.icc <- renderUI(return())
+      }
+      out2RR.ICC.lst <- eval(parse(text=paste0("list(",out2RR.ICC.tables,")")))
+      isprinted2RR.ICC$ct <- TRUE
+
+      PDF.exportICC.fn(out2RR.ICC.lst,2,"ExportPDF2RR.ICC",pdftit2RR0.ICC,
+                       pdftit2RR1.ICC,pdftit2RR2.ICC,pdftit2RR3.ICC,
+                       pdftit2RR4.ICC,pdftit2RR5.ICC,pdftit2RR6.ICC,pdftit2RR6r.ICC,
+                       pdftit2RR7.ICC,pdftit2RR7a.ICC)
+    }) #observeEvent(input$cmdExecute2RR.ICC,{
+
+
+
+    #------------------------------------------------------#
+    #                                                      #
+    #  Treatment of columns of raw data for 3+ Raters      #
+    #  =================================================   #
+    #                                                      #
+    #------------------------------------------------------#
+
+    #1. Preliminaries
+
+    shinyjs::disable("chkpct3RR") # Percent agreement is always computed
+
+    observeEvent(input$chkGrp3RR,{
+      updateTabsetPanel(session, "TabId3RR", selected = "panel1R3R") # Once the chkGrp3RR button is pressed the "Input" tabpanel must be selected
+    })
+
+    nb.raters0 <- 7
+    nb.subjects <-10
+    for (i in 1:nb.raters0){
+      if (i==1) rater.names <-"Rater1"
+      else rater.names <- c(rater.names,paste0("Rater",i))
+    }
+          # CAC initializations
+
+    DF3RR = as.data.frame(rbind(rater.names,matrix("0",nb.subjects,nb.raters0))) #Initial dataset for group analysis (to be modified by user)
+    colnames(DF3RR)=LETTERS[1:nb.raters0]
+    DF3RR.GRP = as.data.frame( #Initial dataset for group analysis (to be modified by user)
+        rbind(c("Group",rater.names),
+              cbind(c(rep("A",nb.subjects/2),rep("B",nb.subjects/2)),
+              matrix("0",nb.subjects,nb.raters0)))
+        )
+    colnames(DF3RR.GRP)=LETTERS[1:(nb.raters0+1)]
+
+          # ICC initializations
+    DF3RR.ICC = as.data.frame(rbind(c("Target",rater.names), #Initial dataset for group analysis (to be modified by user)
+                cbind(c(1:nb.subjects),matrix("0",nb.subjects,nb.raters0))))
+    colnames(DF3RR.ICC)=LETTERS[1:(nb.raters0+1)]
+    DF3RR.ICC.GRP = as.data.frame( #Initial dataset for group & ICC analysis (to be modified by user)
+        rbind(c("Group","Target",rater.names),
+              cbind(c(rep("A",nb.subjects/2),rep("B",nb.subjects/2)),
+                c(1:nb.subjects),
+                matrix("0",nb.subjects,nb.raters0))
+              )
+        )
+    colnames(DF3RR.ICC.GRP) <- LETTERS[1:(nb.raters0+2)]
+
+    # The categories.f function returns a vector of unique categories from selected ratings
+
+    categories3R.f <- function(){
+      if (input$header3RR) nratings.row1 <- nratings$row1+1
+      else nratings.row1 <- nratings$row1
+      ratings.r3 <- as.matrix(dfra3RR$data[nratings.row1:nratings$row2,nratings$col1:nratings$colmax])
+      dframe <- as.data.frame(ratings.r3)
+      fra3RR.mat <- trim(as.matrix(dframe))
+      fra3RR.mat[fra3RR.mat==""] <- NA
+      categ.init <- unique(na.omit(as.vector(unlist(fra3RR.mat))))
+      catego.vec <- sort(categ.init)
+      nbcat$q <- length(catego.vec)
+      return(catego.vec)
+    }
+
+    output.tables3RR.f <- function(){
+      out.tabs <- "dist.subjects,fra.Coeff3RR"
+      if (input$optbench3RR !="none") out.tabs <- paste0(out.tabs,",DFR")
+      if (input$chkweighted3RR==TRUE){
+        out.tabs <- paste0(out.tabs,",DF.Weighted3RR")
+        if (input$optbench3RR !='none') out.tabs <- paste0(out.tabs,",WBenchTable")
+        out.tabs <- paste0(out.tabs,",Weights3RR.fra")
+      }
+      return(out.tabs)
+    }
+
+
+    #2. Deciding here which option panel to display (CAC or ICC)
+
+    observe({
+      toggle(condition = (input$optMethod3RR =='cac'),
+             selector = "#TabId3RR li a[data-value=panel2R3R]")
+      toggle(condition = (input$optMethod3RR =='cac'),
+             selector = "#TabId3RR li a[data-value=panel5R3R]")
+      toggle(condition = (input$optMethod3RR =='icc'),
+             selector = "#TabId3RR li a[data-value=panel3R3R]")
+      toggle(condition = (input$optMethod3RR =='icc'),
+             selector = "#TabId3RR li a[data-value=panel6R3R]")
+      if (input$optMethod3RR =='cac' | input$optMethod3RR =='icc' ) {
+        updateTabsetPanel(session,"TabId3RR",selected = "panel1R3R")
+      }
+    })
+
+    #3. Reading the external dataset #
+
+    dfra3RR <- reactiveValues(data=DF3RR)
+    output$grid3RRaw <- renderRHandsontable({
+        if (input$Import3RR==TRUE){
+            inFile <- input$file3RR
+            if (is.null(inFile)) return(NULL)
+            if (isolate(input$ftype3RR)=='csv') DF <- read.csv(inFile$datapath, header = FALSE, stringsAsFactors = FALSE,sep = input$sep3RR, quote = input$quote3RR)
+            else DF <- read_excel(inFile$datapath,col_names = FALSE)
+            colnames(DF) = LETTERS[1:ncol(DF)]
+        }else{
+          if (input$optMethod3RR=="cac"){
+            if (input$chkGrp3RR) DF <- DF3RR.GRP
+            else DF <- DF3RR
+          }
+          else{
+            if (input$optMethod3RR=="icc"){
+              if (input$chkGrp3RR) DF <- DF3RR.ICC.GRP
+              else DF <- DF3RR.ICC
+            }
+          }
+        }
+        dfra3RR$data <- DF
+        rownames(DF) <- NULL
+        rhandsontable(DF,selectCallback = TRUE, width=350,height = 450,useTypes = FALSE,rowHeaders = TRUE) %>%
+            hot_context_menu(allowColEdit = FALSE,allowRowEdit = TRUE)
+    }) #output$grid3RRaw <- renderRHandsontable({}
+
+    revisedTable <- eventReactive(input$grid3RRaw, { #This is necessary to update the table in realtime
+      DF <- hot_to_r(input$grid3RRaw)
+    })
+
+    observe(dfra3RR$data <- revisedTable())
+
+    observeEvent(input$Reset3RR,{
+      reset("file3RR")
+    })
+
+    #4. Manage the display of the 'custom weights' tabpanel
+    #---------------------------
+    observeEvent(input$optWtype3RR,{ # hide/show custom-weight panel
+      toggle(condition = (input$optWtype3RR =='cusw' & input$chkweighted3RR==TRUE),
+             selector = "#TabId3RR li a[data-value=panel4R3R]")
+    })
+    observeEvent(input$chkweighted3RR,{
+      toggle(condition = (input$optWtype3RR =='cusw' & input$chkweighted3RR==TRUE),
+             selector = "#TabId3RR li a[data-value=panel4R3R]")
+    })
+
+    #5. Describe the initial ratings selected by default
+    # ------------------------------------------------
+    nratings <- reactiveValues(row1=1,row2=1,col1=1,colmax=1) #store rater data coordinates
+    n3RR.tar <- reactiveValues(row1=1,row2=1,colno=1) #store subject data coordinates for ICC analysis only
+    n3RR.grp <- reactiveValues(row1=1,row2=1,colno=1) #store group data coordinates
+    nbcat <- reactiveValues(q=NULL) # store the number of categories
+
+    observe({
+      if (is.null(input$vt3RRaw)){
+        nratings$row1 <- 1
+        nratings$row2 <- nrow(dfra3RR$data)
+        nratings$colmax <- ncol(dfra3RR$data)
+        n3RR.tar$row2 <- nrow(dfra3RR$data)
+        n3RR.grp$row2 <- nrow(dfra3RR$data)
+        if (input$chkGrp3RR){
+          n3RR.grp$row1 <- 1
+          n3RR.grp$colno <- 1
+          if (input$optMethod3RR=='icc'){
+            n3RR.tar$col1 <- 2
+            n3RR.tar$colno <- 2
+            nratings$col1 <- 3
+          }else{
+            nratings$col1 <- 2
+          }
+        }else{
+          if (input$optMethod3RR=='icc'){
+            n3RR.tar$col1 <- 1
+            n3RR.tar$colno <- 1
+            nratings$col1 <- 2
+          }else{
+            nratings$col1 <- 1
+          }
+        }
+        output$vt3RGrp <- renderUI(HTML(paste0("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Group data:<b>",LETTERS[n3RR.grp$colno],n3RR.grp$row1,":",LETTERS[n3RR.grp$colno],n3RR.grp$row2,"</b>")))
+        output$vt3RTar <- renderUI(HTML(paste0("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Target data:<b>",LETTERS[n3RR.tar$colno],n3RR.tar$row1,":",LETTERS[n3RR.tar$colno],n3RR.tar$row2,"</b>")))
+        output$vt3RRaw <- renderUI(HTML(paste0("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Raters' data:<b>",LETTERS[nratings$col1],nratings$row1,":",LETTERS[nratings$colmax],nratings$row2,"</b>")))
+      }
+    })
+
+    #6. Capturing rating data that are highligted by the user
+
+    observeEvent(input$abConfirm3RRGR,{ #selecting group data
+      xmin$i <- input$grid3RRaw_select$select$r
+      xmin$j <- input$grid3RRaw_select$select$c
+      xmax$i <- input$grid3RRaw_select$select$r2
+      xmax$j <- input$grid3RRaw_select$select$c2
+      if (!is.null(xmin$i)){
+        n3RR.grp$row1 <- isolate(xmin$i)
+        n3RR.grp$row2 <- isolate(xmax$i)
+        n3RR.grp$colno <- isolate(xmin$j)
+      }
+    })
+
+    observeEvent(input$abConfirm3RRTar,{ #selecting target data
+      xmin$i <- input$grid3RRaw_select$select$r
+      xmin$j <- input$grid3RRaw_select$select$c
+      xmax$i <- input$grid3RRaw_select$select$r2
+      xmax$j <- input$grid3RRaw_select$select$c2
+      if (!is.null(xmin$i)){
+        n3RR.tar$row1 <- isolate(xmin$i)
+        n3RR.tar$row2 <- isolate(xmax$i)
+        n3RR.tar$colno <- isolate(xmin$j)
+#        output$vt3RTar <- renderUI(HTML(paste0("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Target data:<b>",LETTERS[isolate(n3RR.tar$colno)],isolate(n3RR.tar$row1),":",LETTERS[isolate(n3RR.tar$colno)],isolate(n3RR.tar$row2),"</b>")))
+      }
+    })
+
+    observeEvent(input$abConfirm3RR,{ #selecting rater 1's data
+      xmin$i <- input$grid3RRaw_select$select$r
+      xmin$j <- input$grid3RRaw_select$select$c
+      xmax$i <- input$grid3RRaw_select$select$r2
+      xmax$j <- input$grid3RRaw_select$select$c2
+      if (!is.null(xmin$i)){
+        nratings$row1 <- xmin$i
+        nratings$row2 <- xmax$i
+        nratings$col1 <- xmin$j
+        nratings$colmax <- xmax$j
+      }
+    })
+
+
+    #6. Display the template for capturing custom weights
+
+    observeEvent(input$optWtype3RR,{ # Change the selected panel depending on the type of weights needed
+      updateTabsetPanel(session, "TabId3RR", selected = "panel4R3R")
+      if (input$optWtype3RR =='cusw') {
+        catvec <- categories3R.f()
+        output$crowcategs3RR <-renderUI({
+          fluidRow(
+            column(1, helpText("")),
+            lapply(1:nbcat$q, function(j) {
+              column(width=1, helpText(substr(catvec[j],1,6)),offset=0)
+            })
+          )
+        })
+        output$cweights3RR <-renderUI(
+          lapply(1:nbcat$q, function(i) {
+            fluidRow(
+              column(width=1, helpText(substr(catvec[i],1,6),align="center"),offset=0),
+              lapply(1:nbcat$q, function(j) {
+                if (i==j){
+                  column(width=1, disabled(textInput(paste0("wCells3RR",i,j), label = NULL,value = "1")),
+                         tags$style(type='text/css',paste0("#wCells3RR",i,j," {width: 60px;text-align:center;}")),offset = 0)
+                } else{
+                  column(width=1, textInput(paste0("wCells3RR",i,j), label = NULL,value = "0"),
+                         tags$style(type='text/css',paste0("#wCells3RR",i,j," {width: 60px;text-align:center;}")),offset = 0)
+                }
+              })
+            )
+          })
+        )
+      }else updateTabsetPanel(session, "TabId3RR", selected = "panel1R3R") #if (input$optWtype2RR =='cusw') {
+    })
+
+    #- User-defined function to read the contingency table of custom weights for the 2RR case
+
+    read.cweights3RR <- function(catego.vec){
+      q <- length(catego.vec)
+      nkl.mat <- matrix(0,q,q)
+      for (k in 1:q){
+        for (l in 1:q){
+          nkl.mat[k,l] <- as.numeric(input[[paste0('wCells3RR',k,l)]])
+        }
+      }
+      nkl.mat
+    }
+
+    #---> Preparing for PDF Output
+
+    isprinted3RR.CAC <- reactiveValues(ct=NULL) # reactive value, which is NULL if no output is TRUE if there is CAC output
+    isprinted3RR.ICC <- reactiveValues(ct=NULL) # reactive value, which is NULL if no output is TRUE if there is ICC outpu
+    observe({
+      if (input$optMethod3RR=='cac'){
+        output$Download3RR.ICC <- renderUI(return())
+        if (input$TabId3RR=="panel5R3R" & !is.null(isprinted3RR.CAC$ct))
+          output$Download3RR.CAC <- renderUI({downloadButton('ExportPDF3RR.CAC', 'Save Output')})
+        else output$Download3RR.CAC <- renderUI(return()) #NULL
+      }
+      else{
+        output$Download3RR.CAC <- renderUI(return())
+        if (input$TabId3RR=="panel6R3R" & !is.null(isprinted3RR.ICC$ct))
+          output$Download3RR.ICC <- renderUI({downloadButton('ExportPDF3RR.ICC', 'Save Output')})
+        else output$Download3RR.ICC <- renderUI(return()) #NULL
+      }
+    })
+
+    #
+    #7.EXECUTION/CAC: Creating the final dataset of ratings and computing agreement coefficients
+    #================
+    #
+
+    r3.names <- reactiveValues(grp=NULL,tar=NULL,data=NULL) #group name/label, target/subject label(for ICC only),raters' names
+    bench.request3RR <- reactiveValues(BR=FALSE) # This reactive object stores the reactive value bench.request3RR$BR that will become TRUE as soon as the first benchmarking is placed.
+    bench.request.w3RR <- reactiveValues(WBR=FALSE) # Equivalent of bench.request3RR for weighted coefficients
+    observeEvent(input$cmdExecute3RR.CAC,{
+        updateTabsetPanel(session, "TabId3RR", selected = "panel5R3R") # Once the execute button is pressed the "Output" tabpanel must be selected
+        catvec <- categories3R.f()
+        colnames(dfra3RR$data) <- NULL
+
+        # collecting rating data
+        if (input$header3RR){
+            r3.names$data <- as.matrix(dfra3RR$data)[1,nratings$col1:nratings$colmax]
+            if (isolate(nratings$row1)==1) nratings.row1 <- nratings$row1+1
+            else nratings.row1 <- nratings$row1
+        }else{
+            if (input$chkGrp3RR) r3.names$data <- sapply((nratings$col1-1):(nratings$colmax-1), function(j) paste0("Rater",j))
+            else r3.names$data <- sapply(nratings$col1:nratings$colmax, function(j) paste0("Rater",j))
+            nratings.row1 <- nratings$row1
+        }
+        if (input$chkGrp3RR){
+          # collecting group information
+          if (input$header3RRGR){
+              r3.names$grp <- as.matrix(dfra3RR$data)[1,n3RR.grp$colno]
+              if (isolate(n3RR.grp$row1==1)) n3RR.grp.row1 <- n3RR.grp$row1+1
+              else n3RR.grp.row1 <- n3RR.grp$row1
+          }else{
+              n3RR.grp.row1 <- n3RR.grp$row1
+              r3.names$grp <- "Group"
+          }
+          min.row1 <- min(n3RR.grp.row1,nratings.row1)
+          max.row1 <- max(n3RR.grp.row1,nratings.row1)
+          min.row2 <- min(n3RR.grp$row2,nratings$row2)
+          max.row2 <- max(n3RR.grp$row2,nratings$row2)
+          DF.3RR <- cbind(dfra3RR$data[max.row1:min.row2,n3RR.grp$colno],dfra3RR$data[max.row1:min.row2,nratings$col1:nratings$colmax])
+          colnames(DF.3RR) <- c(r3.names$grp,r3.names$data)
+        }else{
+          ratings.r3 <- as.matrix(dfra3RR$data[nratings.row1:nratings$row2,nratings$col1:nratings$colmax])
+          DF.3RR <- as.data.frame(cbind(rep(1,nrow(ratings.r3)),ratings.r3))
+          colnames(DF.3RR) <- as.vector(c("Group",r3.names$data))
+        }
+        fra3RR.mat <- as.matrix(DF.3RR)
+
+
+        #7.2 Prepare the distribution of subjects by rater and category
+
+        fra3RR.mat <- fra3RR.mat[order(fra3RR.mat[,1]),] # sorting the matrix by group
+        groups.vec <- unique(na.omit(as.vector(unlist(fra3RR.mat[,1])))) # getting list of group names
+        grps.freqs <- plyr::count(as.data.frame(fra3RR.mat),colnames(fra3RR.mat)[1])
+        n.tot <- sum(as.numeric(as.matrix(grps.freqs)[,2]))
+        grps.freqs <- rbind(as.matrix(grps.freqs),c("Overall",n.tot))
+        nb.groups <- length(groups.vec)
+        #define row.pos1 and row.pos2, the first and last rows in the data table fra3RR.mat defining the group ratings. These 2 are needed to extract group data for subgroup analysis.
+        row.pos1 <- rep(1,(nb.groups+1))
+        row.pos2 <- rep(1,(nb.groups+1))
+        for(i in 1:(nb.groups+1)){
+          if (i<=1 | i>nb.groups){
+            row.pos1[i] <-1
+            row.pos2[i] <- as.numeric(grps.freqs[i,2])
+          }else{
+            row.pos1[i] <- row.pos2[i-1] + 1
+            row.pos2[i] <- row.pos2[i-1] + as.numeric(grps.freqs[i,2])
+          }
+        }
+        grps.freqs <- cbind(grps.freqs,row.pos1,row.pos2)
+
+        if (nb.groups==1) gIndex.max <- 1 #gIndex.max represents the total number of groups to process
+        else gIndex.max <- nb.groups+1 #The supplementary group here if the ALL group comprising all groups
+
+        coeff.cols[4] <- paste0(isolate(input$cmbclev3RR),"%conf.interv") # add the correct confidence level to the output table column labels
+
+
+        # CREATING NEEDED USER'S INTERFACE (ui) OBJECTS  ######
+        # -----------------------------------------------------
+
+        # if no subgroup analysis then one tableOutput "gridOut3RR" for example, is sufficient to output unweighted stats.
+        # If subgroup analysis is requested then we must build a tabsetpanel with one tabpanel element by group.
+
+        if (gIndex.max==1){
+          output$ui.dist3RR <- renderUI({
+            div(
+              fluidRow(column(width=1),column(width=11,uiOutput("catLabel3RR"))),
+              fluidRow(column(width=1,uiOutput("raterLabel3RR")),column(width=11,tableOutput("gridCont3RR")))
+            )
+          })
+          output$ui.Unweigted3RR <- renderUI(tableOutput("gridOut3RR"))
+          if (input$optbench3RR !="none") output$ui.UnweigtBench3RR <- renderUI(tableOutput("gridOutBenchU3RR"))
+          if (input$chkweighted3RR==TRUE){
+            output$ui.Weigted3RR <- renderUI(tableOutput("gridOutWted3RR"))
+            if (input$optbench3RR !="none") output$ui.WeigtedBench3RR <- renderUI(tableOutput("gridOutBenchW3RR"))
+          }
+          groups.vec.all <- groups.vec
+        }
+        else{ #if (gIndex.max==1){
+          groups.vec.all <- c(groups.vec,"ALL")
+          for (k in 1:gIndex.max){
+           if (k==1){
+             tab.elements.ct <- paste0("tabPanel('",groups.vec.all[k],"',br(),",
+                                       "fluidRow(column(width=1),column(width=11,uiOutput('catLabel3RR.",k,"'))),",
+                                       "fluidRow(column(width=1,uiOutput('raterLabel3RR.",k,"')),column(width=11,tableOutput('gridCont3RR.",k,"')))),"
+             )
+             tab.elements.uw <- paste0("tabPanel('",groups.vec.all[k], "',tableOutput('gridOut3RR.",k,"')),")
+             tab.elements.uwb <- paste0("tabPanel('",groups.vec.all[k], "',tableOutput('gridOutBenchU3RR.",k,"')),")
+             tab.elements.wted <- paste0("tabPanel('",groups.vec.all[k], "',tableOutput('gridOutWted3RR.",k,"')),")
+             tab.elements.wtedb <- paste0("tabPanel('",groups.vec.all[k], "',tableOutput('gridOutBenchW3RR.",k,"')),")
+           }
+           else{
+            if (k==gIndex.max){
+              tab.elements.ct <- paste0(tab.elements.ct,
+                                        "tabPanel('",groups.vec.all[k], "',br(),",
+                                        "fluidRow(column(width=1),column(width=11,uiOutput('catLabel3RR.",k,"'))),",
+                                        "fluidRow(column(width=1,uiOutput('raterLabel3RR.",k,"')),column(width=11,tableOutput('gridCont3RR.",k,"'))))"
+              )
+              tab.elements.uw <- paste0(tab.elements.uw,"tabPanel('",groups.vec.all[k], "',tableOutput('gridOut3RR.",k,"'))")
+              tab.elements.uwb <- paste0(tab.elements.uwb,"tabPanel('",groups.vec.all[k], "',tableOutput('gridOutBenchU3RR.",k,"'))")
+              tab.elements.wted <- paste0(tab.elements.wted,"tabPanel('",groups.vec.all[k], "',tableOutput('gridOutWted3RR.",k,"'))")
+              tab.elements.wtedb <- paste0(tab.elements.wtedb,"tabPanel('",groups.vec.all[k], "',tableOutput('gridOutBenchW3RR.",k,"'))")
+            }
+            else{
+              tab.elements.ct <- paste0(tab.elements.ct,
+                                        "tabPanel('",groups.vec.all[k],"',br(),",
+                                        "fluidRow(column(width=1),column(width=11,uiOutput('catLabel3RR.",k,"'))),",
+                                        "fluidRow(column(width=1,uiOutput('raterLabel3RR.",k,"')),column(width=11,tableOutput('gridCont3RR.",k,"')))),"
+              )
+              tab.elements.uw <- paste0(tab.elements.uw,"tabPanel('",groups.vec.all[k], "',tableOutput('gridOut3RR.",k,"')),")
+              tab.elements.uwb <- paste0(tab.elements.uwb,"tabPanel('",groups.vec.all[k], "',tableOutput('gridOutBenchU3RR.",k,"')),")
+              tab.elements.wted <- paste0(tab.elements.wted,"tabPanel('",groups.vec.all[k], "',tableOutput('gridOutWted3RR.",k,"')),")
+              tab.elements.wtedb <- paste0(tab.elements.wtedb,"tabPanel('",groups.vec.all[k], "',tableOutput('gridOutBenchW3RR.",k,"')),")
+            }
+           } #END OF if (k==1){
+          } # END OF for (k in 1:gIndex.max){
+          tabset.distrib3RR <- paste0("output$ui.dist3RR <- renderUI({tabsetPanel(id = 'distrib.panel3RR',",tab.elements.ct,")})")
+          tabset.unweighted3RR <- paste0("output$ui.Unweigted3RR <- renderUI({tabsetPanel(id = 'unweighted.panel3RR',",tab.elements.uw,")})")
+          tabset.uwtedBench3RR <- paste0("output$ui.UnweigtBench3RR <- renderUI({tabsetPanel(id = 'unbench.panel3RR',",tab.elements.uwb,")})")
+          tabset.weighted3RR <- paste0("output$ui.Weigted3RR <- renderUI({tabsetPanel(id = 'weighted.panel3RR',",tab.elements.wted,")})")
+          tabset.wtedBench3RR <- paste0("output$ui.WeigtedBench3RR <- renderUI({tabsetPanel(id = 'wtedbench.panel3RR',",tab.elements.wtedb,")})")
+
+          eval(parse(text=tabset.distrib3RR))
+          eval(parse(text=tabset.unweighted3RR))
+          if (input$optbench3RR !="none") eval(parse(text=tabset.uwtedBench3RR))
+          if (input$chkweighted3RR==TRUE){
+            eval(parse(text=tabset.weighted3RR))
+            if (input$optbench3RR !="none") eval(parse(text=tabset.wtedBench3RR))
+
+          }else output$ui.Weigted3RR <- renderUI(HTML(""))
+        } #END OF ---> if (gIndex.max==1){
+
+        # END OF CREATION OF USER INTERFACE OBJECTS
+        # -----------------------------------------
+
+
+        # Printing out various titles associated with unweighted coefficients
+
+        output$titDist3RR <- renderUI(HTML("<b>DISTRIBUTION OF SUBJECTS BY RATER AND SCORE/CATEGORY</b>"))
+        output$hline3RR <- renderUI(tags$hr(style="border-color: purple;"))
+        output$titCoeff3RR <- renderUI(HTML("<b>INTER-RATER RELIABILITY COEFFICIENTS & ASSOCIATED PRECISION MEASURES</b>"))
+        output$titUnWt3RR <- renderUI(HTML("<br>Unweighted Agreement Coefficients<br>"))
+        if (input$optbench3RR !="none"){
+          output$hline.bench3RR <- renderUI(tags$hr(style="border-color: purple;"))
+          bench.name <- switch (input$optbench3RR,
+                                lk = "Landis-Koch",
+                                altman = "Altman",
+                                fleiss = "Fleiss"
+          )
+          output$titBench1U3RR <- renderUI(HTML("<b>",paste0(bench.name," Interpretation of Unweighted Agreement Coefficients</b>")))
+          output$titBench2U3RR <- renderUI(HTML("Benchmarking Unweighted Coefficients using Cumulative Membership Probabilities"))
+          bench.request3RR$BR <- TRUE #Indicator that a benchmarking has been printed
+        }else{
+          if (bench.request3RR$BR){
+            bench.request3RR$BR <- FALSE
+            output$ui.UnweigtBench3RR <- renderUI(HTML(""))
+          }
+          output$hline.bench3RR <- renderUI(HTML(""))
+          output$titBench1U3RR <- renderUI(HTML(""))
+          output$titBench2U3RR <- renderUI(HTML(""))
+          output$titBench1W3RR <- renderUI(HTML(""))
+          output$titBench2W3RR <- renderUI(HTML(""))
+        } #END OF --> if (input$optbench3RR !="none"){
+
+        # Printing out various titles associated with weighted coefficients as well as the weight matrix
+
+        if (input$chkweighted3RR==TRUE){
+          output$hlineWted3RR <- renderUI(tags$hr(style="border-color: purple;"))
+          Weights3RR <- WeightsGen.f(catvec,input$chkweighted3RR,input$optWtype3RR,input$optweights3RR,"3R")$wmat
+          Wt.title3RR <- WeightsGen.f(catvec,input$chkweighted3RR,input$optWtype3RR,input$optweights3RR,"3R")$wtit
+          output$titWted3RR <- renderUI(HTML(paste0("Weighted Agreement Coefficients (",Wt.title3RR,")")))
+          # Output the weight matrix
+          output$titWtype3RR <- renderUI(HTML(Wt.title3RR))
+          Weights3RR.fra <- as.data.frame(formatC(Weights3RR,format="f",digits=4)) #Printing the weight matrix used to compute weighted agreement coefficients
+          colnames(Weights3RR.fra) <- catvec
+          rownames(Weights3RR.fra) <- catvec
+          output$gridOutWeights3RR = renderTable(Weights3RR.fra,rownames = TRUE,colnames = TRUE,bordered = TRUE,spacing = 'xs')
+
+          # Processing the benchmarking of the weighted agreement coefficients if necessary
+
+          if (input$optbench3RR !='none'){
+            output$titBench1W3RR <- renderUI(HTML("<b>",paste0(bench.name," Interpretation of Weighted Agreement Coefficients</b>")))
+            output$titBench2W3RR <- renderUI(HTML("Benchmarking Weighted Coefficients using Cumulative Membership Probabilities"))
+            bench.request.w3RR$WBR <- TRUE
+          }else{
+            if (bench.request.w3RR$WBR){
+                output$ui.WeigtedBench3RR <- renderUI(HTML(""))
+                bench.request.w3RR$WBR <- FALSE
+            }
+            output$titBench1W3RR <- renderUI(HTML(""))
+            output$titBench2W3RR <- renderUI(HTML(""))
+            if (bench.request.w3RR$WBR){
+                output$gridOutBenchW3RR <- renderTable(data.frame())
+            }
+          }
+        }else{
+          output$gridOutWted3RR <- renderTable(data.frame())
+          output$titWted3RR <- renderUI(HTML(""))
+          output$titWtype3RR <- renderUI(HTML(""))
+          output$gridOutWeights3RR <- renderTable(data.frame())
+        } #End OF if (input$chkweighted3RR==TRUE){
+
+        ### Preparing the titles to be used in the PDF export file
+
+        pdftit3RR1 <- textGrob("Distribution of Subjects by Rater and Category",gp=gpar(size=14,font=2))
+        pdftit3RR2 <- textGrob("INTER-RATER RELIABILITY COEFFICIENTS & ASSOCIATED PRECISION MEASURES",gp=gpar(size=14,font=2))
+        pdftit3RR3 <- textGrob("Unweighted Agreement Coefficients",gp=gpar(size=12,font=2))
+        if (input$optbench3RR !="none"){
+          pdftit3RR4 <- textGrob(paste0(bench.name," Interpretation of Unweighted Agreement Coefficients"),gp=gpar(size=12,font=2))
+        }
+        pdftit3RR5 <- textGrob("Benchmarking Unweighted Coefficients using Cumulative Membership Probabilities",gp=gpar(size=12,font=3))
+        if (input$chkweighted3RR==TRUE){
+          pdftit3RR6 <- textGrob(paste0("Weighted Agreement Coefficients (",Wt.title3RR,")"),gp=gpar(size=12,font=2))
+          if (input$optbench3RR !="none") pdftit3RR7 <- textGrob(paste0(bench.name," Interpretation of Weighted Agreement Coefficients"),gp=gpar(size=12,font=2))
+          pdftit3RR8 <- textGrob("Benchmarking Weighted Coefficients using Cumulative Membership Probabilities",gp=gpar(size=12,font=3))
+          pdftit3RR9 <- textGrob(Wt.title3RR)
+        }
+
+        # Processing all subject groups, one at a time
+
+        out3RR.tables <- lapply(1:gIndex.max, function(i){
+          # Extract ratings associated with current group
+          gIndex1 <- as.numeric(grps.freqs[i,3])
+          gIndex2 <- as.numeric(grps.freqs[i,4])
+          frame.i <- fra3RR.mat[gIndex1:gIndex2,2:ncol(fra3RR.mat)]
+
+          #computing the distribution of subjects by category for the current group
+
+          dist.subjects <- sapply(catvec,function(i){apply((frame.i==i),2,sum)})
+          dist.subjects <- cbind(dist.subjects,rowSums(dist.subjects))
+          dist.subjects <- rbind(dist.subjects,colMeans(dist.subjects))
+          colnames(dist.subjects)[length(colnames(dist.subjects))]<-"Total"
+          rownames(dist.subjects)[length(rownames(dist.subjects))]<-"Average"
+          colnames(dist.subjects)[colnames(dist.subjects)==""]<-"Missing"
+          rownames(dist.subjects)[rownames(dist.subjects)==""]<-"Missing"
+
+          fra.Coeff3RR <- coefficients3RR.f(identity.weights(catvec),catvec,frame.i,
+                                            input$chkkappa3RR, input$chkac13RR, input$chkpi3RR,
+                                            input$chkalpha3RR, input$chkkbp3RR)[,c(1,4:7)]
+          colnames(fra.Coeff3RR) <- coeff.cols
+          fra.Coeff3RR$coeff <- format(fra.Coeff3RR$coeff,digits=3)
+          fra.Coeff3RR$stderr <- formatC(fra.Coeff3RR$stderr,format="f",digits=3)
+          fra.Coeff3RR$p.value <- formatC(fra.Coeff3RR$p.value,format="e",digits=3)
+          colnames(fra.Coeff3RR) <- c("Method", "Coeff", "StdErr",paste0(input$cmbclev3RR,"% C.I."),"P-Value")
+          if (gIndex.max==1){
+            output$raterLabel3RR <- renderUI(HTML(paste0("<b> Raters </b>")))
+            output$catLabel3RR <- renderUI(HTML(paste0("<b> Categories </b>")))
+            output$gridCont3RR <- renderTable(dist.subjects,rownames = TRUE,bordered = TRUE,spacing = 'xs')
+            output$gridOut3RR <- renderTable(fra.Coeff3RR,rownames = FALSE,bordered = TRUE,spacing = 'xs',striped = TRUE)
+
+            if (input$optbench3RR !="none"){# Benchmarking unweighted agreement coefficients
+              DFR <- benchmark.table(fra.Coeff3RR,"3R")
+              output$gridOutBenchU3RR = renderTable(DFR,bordered = TRUE,spacing = 'xs')
+            }else{
+              if (bench.request3RR$BR){
+                output$gridOutBenchU3R = renderTable(data.frame())
+                output$gridOutBenchW3R = renderTable(data.frame())
+              }
+            }#if (input$optbench2RR !="none"){# Benchmarking unweighted agreement coefficients
+
+            if (input$chkweighted3RR==TRUE){# Computing the weighted agreement coefficients for 3-rater analysis
+              DF.Weighted3RR <- coefficients3RR.f(Weights3RR,catvec,frame.i,
+                                                  input$chkkappa3RR, input$chkac13RR, input$chkpi3RR,
+                                                  input$chkalpha3RR, input$chkkbp3RR)[,c(1,4:7)] #compute weighted coefficients
+              colnames(DF.Weighted3RR) <- coeff.cols
+              DF.Weighted3RR$coeff <- format(DF.Weighted3RR$coeff,digits=3)
+              DF.Weighted3RR$stderr <- formatC(DF.Weighted3RR$stderr,format="f",digits=3)
+              DF.Weighted3RR$p.value <- formatC(DF.Weighted3RR$p.value,format="e",digits=3)
+              colnames(DF.Weighted3RR) <- c("Method", "Coeff", "StdErr",paste0(input$cmbclev3RR,"% C.I."),"P-Value")
+
+              # Printing out weighted coefficients
+              #-----------------------------------
+              output$gridOutWted3RR <- renderTable(DF.Weighted3RR,bordered = TRUE,spacing = 'xs',striped = TRUE)
+              # Processing the benchmarking of the weighted agreement coefficients if necessary
+              if (isolate(input$optbench3RR) !='none'){
+                WBenchTable <- benchmark.table(DF.Weighted3RR,"3R")
+                output$gridOutBenchW3RR <- renderTable(WBenchTable,bordered = TRUE,spacing = 'xs')
+              }
+            }#End of weighted analysis/if (input$chkweighted2RR==TRUE){# Computing the weighted agreement coefficients for 2-rater analysis
+          }
+          else{ #if (gIndex.max==1){
+            output[[paste0('raterLabel3RR.',i)]] <- renderUI(HTML(paste0("<b> Raters </b>")))
+            output[[paste0('catLabel3RR',i)]] <- renderUI(HTML(paste0("<b> Categories </b>")))
+            output[[paste0('gridCont3RR.',i)]] <- renderTable(dist.subjects,rownames = TRUE,bordered = TRUE,spacing = 'xs')
+            output[[paste0('gridOut3RR.',i)]] <- renderTable(fra.Coeff3RR,rownames = FALSE,bordered = TRUE,spacing = 'xs',striped = TRUE)
+            if (input$optbench3RR !="none"){
+              DFR <- benchmark.table(fra.Coeff3RR,"3R")
+              output[[paste0('gridOutBenchU3RR.',i)]] <- renderTable(DFR,rownames = FALSE,bordered = TRUE,spacing = 'xs')
+            }
+            if (input$chkweighted3RR==TRUE){# Computing the weighted agreement coefficients for 2-rater analysis
+              DF.Weighted3RR <- coefficients3RR.f(Weights3RR,catvec,frame.i,
+                                                  input$chkkappa3RR, input$chkac13RR, input$chkpi3RR,
+                                                  input$chkalpha3RR, input$chkkbp3RR)[,c(1,4:7)] #compute weighted coefficients
+              colnames(DF.Weighted3RR) <- coeff.cols
+              DF.Weighted3RR$coeff <- format(DF.Weighted3RR$coeff,digits=3)
+              DF.Weighted3RR$stderr <- formatC(DF.Weighted3RR$stderr,format="f",digits=3)
+              DF.Weighted3RR$p.value <- formatC(DF.Weighted3RR$p.value,format="e",digits=3)
+              colnames(DF.Weighted3RR) <- c("Method", "Coeff", "StdErr",paste0(input$cmbclev3RR,"% C.I."),"P-Value")
+              output[[paste0('gridOutWted3RR.',i)]] <- renderTable(DF.Weighted3RR,bordered = TRUE,spacing = 'xs',striped = TRUE) # Printing out weighted coefficients
+              # Processing the benchmarking of the weighted agreement coefficients if necessary
+              if (input$optbench3RR !='none'){
+                WBenchTable <- benchmark.table(DF.Weighted3RR,"3R")
+                output[[paste0('gridOutBenchW3RR.',i)]] <- renderTable(WBenchTable,bordered = TRUE,spacing = 'xs')
+              }
+            }#End of weighted analysis/if (input$chkweighted2RR==TRUE){# Computing the weighted agreement coefficients for 2-rater analysis
+          } #END OF -->>> if (gIndex.max==1){
+          eval(parse(text=paste0("list(",output.tables3RR.f(),")"))) #Here is where the list of output tables is created
+        }) #lapply(1:gIndex.max, function(i) /END of sub-group treatment
+
+        PDF.exportCAC.fn(out3RR.tables,"ExportPDF3RR.CAC",groups.vec.all,catvec,
+                         pdftit3RR1,pdftit3RR2,pdftit3RR3,
+                         pdftit3RR4,pdftit3RR5,pdftit3RR6,
+                         pdftit3RR7,pdftit3RR8,pdftit3RR9)
+        isprinted3RR.CAC$ct<-TRUE
+    }) #END OF ---> observeEvent(input$cmdExecute3RR.CAC,{
+
+
+    #
+    # Options (ICC) for 3 raters/raw data
+    # -----------------------------------
+    #
+    #
+
+    titANOVA3RR <-reactiveValues(tit="",inter=NULL,intra=NULL,pval.r=NULL,pval.a=NULL)
+
+    ### addICC.row.f: This function combines the "xtable" table and the "xtit" title into a single Grob object to be displayed on a PDF output.
+    addICC.row.f <- function(xtit, xtable){
+      padding <- unit(5,"mm")
+      w.max <- 0.5*grobWidth(xtit)
+      new.table <- gtable_add_rows(
+        xtable,
+        heights = grobHeight(xtit) + padding,
+        pos = 0)
+      new.table <- gtable_add_cols(new.table, widths=w.max, pos = 0)
+      new.table <- gtable_add_cols(new.table, widths=w.max, pos = -1)
+      new.table <- gtable_add_grob(
+        new.table,
+        xtit,
+        t=1, l=1, b=1, r=ncol(new.table)
+      )
+      return(new.table)
+    }
+    ## Function PDF.exportICC.fn exports to a PDF file all results if the ICC analysis displayed on the screen .  The input parameter
+    #is a list of all tables and titles that were output by the Execute command
+    #####
+    PDF.exportICC.fn <- function(out.tables,NB.Raters,ExportPDF,pdftit0,
+                                 pdftit1,pdftit2,pdftit3,pdftit4,
+                                 pdftit5,pdftit6,pdftit6r,pdftit7,pdftit7a){
+      nb.tables <- length(out.tables)
+      toptit <- "AgreeStat / ICC"
+      xtime <- format(Sys.time(), "%a %b %d %X %Y")
+      mytheme <- gridExtra::ttheme_default(
+        core = list(fg_params=list(cex = 0.9)),
+        colhead = list(fg_params=list(cex = 0.8)),
+        rowhead = list(fg_params=list(cex = 0.8)))
+
+      tab4.def <- gtable(widths=unit(c(8), "in"), heights=unit(c(2,0.5,0.5,5.5,3.5,3.0,6.0), "cm"))
+      pdfcoeff.tit <- pdftit6
+      pdfpval.tit <- pdftit6r
+
+      if (NB.Raters==2) tit.inter <- titANOVA2RR$inter
+      else tit.inter <- titANOVA3RR$inter
+      if (is.null(tit.inter)){
+        pdfcoeff.tit <- pdftit7
+        pdfpval.tit <- pdftit7a
+      }
+      tab4.def <- gtable_add_grob(tab4.def,pdftit1, t=1, b=1, l=1, r=1)
+      tab4.def <- gtable_add_grob(tab4.def,pdftit2, t=2, b=2, l=1, r=1)
+      tab4.def <- gtable_add_grob(tab4.def,pdftit3, t=3, b=3, l=1, r=1)
+      tab4.def <- gtable_add_grob(tab4.def,tableGrob(as.data.frame(out.tables[[1]]),rows=NULL,theme = mytheme), t=4,b=4,l=1, r=1)
+      tab4.def <- gtable_add_grob(tab4.def,tableGrob(as.data.frame(out.tables[[2]]),rows=NULL,theme = mytheme), t=5,b=5,l=1, r=1)
+      tab4.def <- gtable_add_grob(tab4.def,addICC.row.f(pdfcoeff.tit,tableGrob(as.data.frame(out.tables[[3]]),rows=NULL,theme = mytheme)),t=6,b=6,l=1,r=1)
+      tab4.def <- gtable_add_grob(tab4.def,addICC.row.f(pdfpval.tit,tableGrob(as.data.frame(out.tables[[4]]),rows=NULL,theme = mytheme)),t=7,b=7,l=1,r=1)
+      nb.pages <- 1
+      if (nb.tables==6){
+        nb.pages <- 2
+        tab6.def <- gtable(widths=unit(c(8), "in"), heights=unit(c(2,0.5,0.5,4.5,5.5), "cm"))
+        tab6.def <- gtable_add_grob(tab6.def,pdftit1, t=1, b=1, l=1, r=1)
+        tab6.def <- gtable_add_grob(tab6.def,pdftit2, t=2, b=2, l=1, r=1)
+        tab6.def <- gtable_add_grob(tab6.def,pdftit3, t=3, b=3, l=1, r=1)
+        tab6.def <- gtable_add_grob(tab6.def,addICC.row.f(pdftit7, tableGrob(as.data.frame(out.tables[[5]]),rows=NULL,theme = mytheme)),t=4,b=4,l=1,r=1)
+        tab6.def <- gtable_add_grob(tab6.def,addICC.row.f(pdftit7a,tableGrob(as.data.frame(out.tables[[6]]),rows=NULL,theme = mytheme)),t=5,b=5,l=1,r=1)
+      }
+      output[[ExportPDF]] = downloadHandler(
+        filename = function() {paste("agreestat",".pdf",sep="")},
+        content = function(file){
+          pdf(file, onefile = TRUE,width=8.5,height=11)
+          grid.arrange(tab4.def, #nrow=1,
+                       top = textGrob(toptit,gp=gpar(fontsize=16,font=2)),
+                       bottom = textGrob(paste0('---------- ',xtime,' ----------(Page: 1/',nb.pages,')')),
+                       vp=viewport(h=0.9))
+          if (nb.tables==6){
+            grid.arrange(tab6.def, #nrow=1,
+                         top = textGrob(toptit,gp=gpar(fontsize=16,font=2)),
+                         bottom = textGrob(paste0('---------- ',xtime,' ----------(Page: 2/',nb.pages,')')),
+                         vp=viewport(h=0.9))
+          }
+          dev.off()
+        }
+      )
+    }#### END OF the "function PDF.export.fn(out.tables)"
+
+
+
+
+
+
+    #
+    # EXECUTION / ICC: Creating the final dataset of ratings and computing ICC agreement coefficients
+    #=================
+    #
+
+    observeEvent(input$cmdExecute3RR.ICC,{
+        updateTabsetPanel(session, "TabId3RR", selected = "panel6R3R") # Once the execute button is pressed the "Output" tabpanel must be selected
+        #colnames(dfra3RR$data) <- NULL
+
+                ###  Printout the main titles
+
+        if (input$optIccModel3R=="model1A"){
+          shinyjs::disable("chkTypeICC3R1Ar")
+          shinyjs::disable("chkTypeICC3R1Aa")
+          titANOVA3RR$tit <- "ANOVA: 1-Way Random Subject Effects Model"
+          titANOVA3RR$inter="INTER-RATER RELIABILITY"
+          titANOVA3RR$pval.r="P-value/Inter-rater reliability"
+          titANOVA3RR$pval.a=NULL
+          titANOVA3RR$intra=NULL
+        }
+        else{
+          if (input$optIccModel3R=="model1B"){
+            shinyjs::disable("chkTypeICC3R1Ba")
+            shinyjs::disable("chkTypeICC3R1Br")
+            titANOVA3RR$tit <- "ANOVA: 1-Way Random Rater Effects Model"
+            titANOVA3RR$inter=NULL
+            titANOVA3RR$intra="INTRA-RATER RELIABILITY"
+            titANOVA3RR$pval.r=NULL
+            titANOVA3RR$pval.a="P-value/Intra-rater reliability"
+          }
+          else{
+            if (input$optIccModel3R=="model2or3" & input$optICC3R.2Way=="model2"){
+              if (input$chkInteraction3RR) titANOVA3RR$tit <- "ANOVA: 2-Way Random Rater Effects ANOVA Model with Interaction"
+              else titANOVA3RR$tit <- "ANOVA: 2-Way Random Rater Effects ANOVA Model without Interaction"
+            }
+            else{
+              if (input$optIccModel3R=="model2or3" & input$optICC3R.2Way=="model3"){
+                if (input$chkInteraction3RR) titANOVA3RR$tit <- "ANOVA: 2-Way Mixed ANOVA Model with Interaction (Random Subject & Fixed Rater Effects)"
+                else titANOVA3RR$tit <- "ANOVA: 2-Way Mixed ANOVA Model without Interaction (Random Subject & Fixed Rater Effects)"
+              }
+            }
+            if (input$optIccModel3R=="model2or3"){
+              if (input$chkTypeICC3R2r){
+                shinyjs::enable("chkTypeICC3R2a")
+                titANOVA3RR$inter="INTER-RATER RELIABILITY"
+                titANOVA3RR$pval.r="P-value/Inter-rater reliability"
+              }
+              else{
+                shinyjs::disable("chkTypeICC3R2a")
+                titANOVA3RR$inter=NULL
+                titANOVA3RR$pval.r=NULL
+                titANOVA3RR$intra="INTRA-RATER RELIABILITY"
+                titANOVA3RR$pval.a="P-value/Intra-rater reliability"
+              }
+              if (input$chkTypeICC3R2a){
+                shinyjs::enable("chkTypeICC3R2r")
+                titANOVA3RR$intra="INTRA-RATER RELIABILITY"
+                titANOVA3RR$pval.a="P-value/Intra-rater reliability"
+              }
+              else{
+                shinyjs::disable("chkTypeICC3R2r")
+                titANOVA3RR$intra=NULL
+                titANOVA3RR$pval.a=NULL
+                titANOVA3RR$inter="INTER-RATER RELIABILITY"
+                titANOVA3RR$pval.r="P-value/Inter-rater reliability"
+              }
+            }
+          }
+        }
+        output$titANOVA3RR <- renderUI(HTML(paste0("<font size=2 color='red'>",titANOVA3RR$tit,"</font>")))
+
+                ###  Capture input data into a data frame  ........
+
+        if (input$header3RR){
+            r3.names$data <- as.matrix(dfra3RR$data)[1,nratings$col1:nratings$colmax]
+            if (isolate(nratings$row1)==1) nratings.row1 <- nratings$row1+1
+            else nratings.row1 <- nratings$row1
+        }else{
+            if (input$chkGrp3RR) r3.names$data <- sapply((nratings$col1-2):(nratings$colmax-2), function(j) paste0("Rater",j))
+            else r3.names$data <- sapply((nratings$col1-1):(nratings$colmax-1), function(j) paste0("Rater",j))
+            nratings.row1 <- nratings$row1
+        }
+        if (input$header3RRTar) r3.names$tar <- as.vector(unlist(dfra3RR$data[1,n3RR.tar$colno]))
+        else r3.names$tar <- "Target"
+        if (input$chkGrp3RR){# collecting group information
+          if (input$header3RRGR){
+             r3.names$grp <- as.vector(unlist(dfra3RR$data[1,n3RR.grp$colno]))
+             if (isolate(n3RR.grp$row1==1)) n3RR.grp.row1 <- n3RR.grp$row1+1
+             else n3RR.grp.row1 <- n3RR.grp$row1
+          }else{
+             n3RR.grp.row1 <- n3RR.grp$row1
+             r3.names$grp <- "Group"
+          }#if (input$header3RRGR)
+          min.row1 <- min(n3RR.grp.row1,n3RR.tar$row1,nratings.row1)
+          max.row1 <- max(n3RR.grp.row1,n3RR.tar$row1,nratings.row1)
+          min.row2 <- min(n3RR.grp$row2,n3RR.tar$row2,nratings$row2)
+          max.row2 <- max(n3RR.grp$row2,n3RR.tar$row2,nratings$row2)
+          DF.3RR <- cbind(dfra3RR$data[max.row1:min.row2,n3RR.grp$colno],
+                          dfra3RR$data[max.row1:min.row2,n3RR.tar$colno],
+                          dfra3RR$data[max.row1:min.row2,nratings$col1:nratings$colmax])
+          colnames(DF.3RR) <- c(r3.names$grp,r3.names$tar,r3.names$data)
+        }else{
+          min.row1 <- min(n3RR.tar$row1,nratings.row1)
+          max.row1 <- max(n3RR.tar$row1,nratings.row1)
+          min.row2 <- min(n3RR.tar$row2,nratings$row2)
+          max.row2 <- max(n3RR.tar$row2,nratings$row2)
+          DF.3RR <- cbind(rep(1,(min.row2-max.row1+1)),
+                          dfra3RR$data[max.row1:min.row2,n3RR.tar$colno],
+                          dfra3RR$data[max.row1:min.row2,nratings$col1:nratings$colmax])
+          colnames(DF.3RR) <- c("Group",r3.names$tar,r3.names$data)
+
+
+        } # End of if (input$chkGrp3RR){
+        # output$titMain3RR.icc <- renderUI(HTML(
+        #   paste0("<b><font size=4 color='red'>Intraclass Correlation Coefficients/ICC (Time:",Sys.time(),")</font></b>")))
+        output$titMain3RR.icc <- renderUI(HTML(paste0("<font size=4 color='red'>Intraclass Correlation Coefficients/ICC (Time:",Sys.time(),")</font>")))
+        output$titModel.icc <- renderUI(HTML(paste0("<b><font size=3>",titANOVA3RR$tit,"</font></b>")))
+        output$hline1.icc <- renderUI(tags$hr(style="border-color: purple;"))
+        output$titRaters.icc <- renderUI(HTML(paste0("<i><font size=2>(Participating Raters: ",paste(r3.names$data,collapse=','),")</font></i>")))
+        output$tit.descrip.icc <- renderUI(HTML(paste0("<b><font size=3> Descriptive Statistics</font></b>")))
+
+
+        output$tit.varcomp.icc <- renderUI(HTML(paste0("<b><font size=3> Variance Components</font></b>")))
+
+        if (!is.null(titANOVA3RR$inter)) output$tit.inter.icc <- renderUI(HTML(paste0("<b><font size=3>",titANOVA3RR$inter,"</font></b>")))
+        else output$tit.inter.icc <- renderUI(return())
+        if (!is.null(titANOVA3RR$intra)) output$tit.intra.icc <- renderUI(HTML(paste0("<b><font size=3>",titANOVA3RR$intra,"</font></b>")))
+        else output$tit.intra.icc <- renderUI(return())
+
+        DF.3RR <- DF.3RR[order(DF.3RR[,1]),] # sorting the matrix by group
+        groups.vec <- unique(na.omit(as.vector(unlist(DF.3RR[,1])))) # getting list of group names
+        grps.freqs <- plyr::count(DF.3RR,colnames(DF.3RR)[1])
+        n.tot <- sum(as.numeric(as.matrix(grps.freqs)[,2]))
+        grps.freqs <- rbind(as.matrix(grps.freqs),c("Overall",n.tot))
+        nb.groups <- length(groups.vec)
+
+
+        #define row.pos1 and row.pos2, the first and last rows in the data table fra3RR.mat defining the group ratings. These 2 are needed to extract group data for subgroup analysis.
+        row.pos1 <- rep(1,(nb.groups+1))
+        row.pos2 <- rep(1,(nb.groups+1))
+        for(i in 1:(nb.groups+1)){
+          if (i<=1 | i>nb.groups){
+            row.pos1[i] <-1
+            row.pos2[i] <- as.numeric(grps.freqs[i,2])
+          }else{
+            row.pos1[i] <- row.pos2[i-1] + 1
+            row.pos2[i] <- row.pos2[i-1] + as.numeric(grps.freqs[i,2])
+          }
+        }
+        grps.freqs <- cbind(grps.freqs,row.pos1,row.pos2)
+        if (nb.groups==1) gIndex.max <- 1 #gIndex.max represents the total number of groups to process
+        else gIndex.max <- nb.groups+1 #The supplementary group here if the ALL group comprising all groups
+
+        #
+        #---  ICC Calculation: Processing all groups of subjects sequentially
+        #
+
+        conf.lev = as.numeric(input$si.CI3R.icc)/100
+        statname<-c("Number of subjects/targets:",
+                    "Number of raters/observers:",
+                    "Max replicates per subject & rater:",
+                    "Min replicates per subject & rater:",
+                    "Total number of measurements:",
+                    "Mean value of analytic variable:",
+                    "Subject variance",
+                    "Rater variance",
+                    "Error variance",
+                    "Subject-rater interaction",
+                    "Intraclass Correlation", #icc.r
+                    "Intraclass Correlation", #icc.a
+                    paste0(input$si.CI3R.icc,"% Confidence Interval"), #---inter-rater",
+                    "0.0",
+                    "0.1",
+                    "0.3",
+                    "0.5",
+                    "0.7",
+                    "0.9",
+                    paste0(input$si.CI3R.icc,"% Confidence Interval"), #/intra-rater",
+                    "0.0",
+                    "0.1",
+                    "0.3",
+                    "0.5",
+                    "0.7",
+                    "0.9")
+        df.descriptive <- data.frame(statname,matrix(0,26,gIndex.max))
+        #colnames(df.descriptive) <- c("statname",g.colnames)
+        if (nb.groups==1){
+          ColNamesPRT <- FALSE
+          colnames(df.descriptive) <- c("Descriptive Statistics","Estimate")
+        }
+        else{
+          ColNamesPRT <- TRUE
+          colnames(df.descriptive) <- c("Descriptive Statistics",groups.vec,"Overall")
+        }
+
+        ### Preparing the titles to be used in the PDF export file
+          ##--> font: standard: 1 = plain, 2 = bold, 3 = italic, 4 = bold italic
+        pdftit3RR0.ICC <- textGrob(paste(sapply(1:100,function(x) "x"),collapse=""),gp=gpar(size=14,font=2)) #this is a dummy title used to set the maximum width of the PDF report
+        pdftit3RR1.ICC <- textGrob("MODULE: ICC - Intraclass Correlation",gp=gpar(size=14,font=2))
+        pdftit3RR2.ICC <- textGrob(titANOVA3RR$tit,gp=gpar(size=14,font=2))
+        pdftit3RR3.ICC <- textGrob(paste0("(Participating Raters: ",paste(r3.names$data,collapse=','),")"),gp=gpar(size=12,font=3))
+        pdftit3RR4.ICC <- textGrob("Descriptive Statistics",gp=gpar(size=11,font=4))
+        pdftit3RR5.ICC <- textGrob("Variance Components",gp=gpar(size=11,font=4))
+        if (!is.null(titANOVA3RR$inter)){
+          pdftit3RR6.ICC <- textGrob("Inter-rater reliability",gp=gpar(size=10,font=2))
+          pdftit3RR6r.ICC <- textGrob(titANOVA3RR$pval.r,gp=gpar(size=10,font=2))
+        }else{
+          pdftit3RR6.ICC <- NULL
+          pdftit3RR6r.ICC <- NULL
+        }
+        if (!is.null(titANOVA3RR$intra)){
+          pdftit3RR7.ICC <- textGrob("Intra-rater reliability",gp=gpar(size=10,font=2))
+          pdftit3RR7a.ICC <- textGrob(titANOVA3RR$pval.a,gp=gpar(size=10,font=2))
+        }else{
+          pdftit3RR7.ICC <- NULL
+          pdftit3RR7a.ICC <- NULL
+        }
+
+              #--  Computing descriptive statistics  ----
+
+        d.stats <- sapply(1:gIndex.max, function(i){
+            # Extract ratings associated with current group
+            gIndex1 <- as.numeric(grps.freqs[i,3])
+            gIndex2 <- as.numeric(grps.freqs[i,4])
+            frame.i <- DF.3RR[gIndex1:gIndex2,2:ncol(DF.3RR)]
+            if (input$optIccModel3R=="model1A"){
+              icc.df <- icc1a.fn(frame.i)
+              ci.r.df <- ci.ICC1a(frame.i,conflev=conf.lev)
+              pval.r.df <- pval.ICC1a(frame.i)
+              var.stats <- round(c(icc.df$sig2s,0,icc.df$sig2e,0),3)
+              coeff.stats <-round(c(icc.df$icc1a,0),3)
+              ci.inter.stats <- paste0("(",round(ci.r.df$lcb,2)," to ",round(ci.r.df$ucb,2),")")
+              pval.inter.stats <- pval.r.df$pval
+              ci.intra.stats <- ""
+              pval.intra.stats <-rep(0,6)
+            }else{
+              if (input$optIccModel3R=="model1B"){
+                icc.df <- icc1b.fn(frame.i)
+                ci.a.df <- ci.ICC1b(frame.i,conflev=conf.lev)
+                pval.a.df <- pval.ICC1b(frame.i)
+                var.stats <- round(c(0,icc.df$sig2r,icc.df$sig2e,0),3)
+                coeff.stats <-round(c(0,icc.df$icc1b),3)
+                ci.inter.stats <- ""
+                pval.inter.stats <- rep(0,6)
+                ci.intra.stats <- paste0("(",round(ci.a.df$lcb,2)," to ",round(ci.a.df$ucb,2),")")
+                pval.intra.stats <- pval.a.df$pval
+              }else{
+                if (input$optIccModel3R=="model2or3" & input$optICC3R.2Way=="model2"){
+                  if (input$chkInteraction3RR){
+                    icc.df <- icc2.inter.fn(frame.i)
+                    ci.r.df <- ci.ICC2r.inter(frame.i,conflev=conf.lev)
+                    ci.a.df <- ci.ICC2a.inter(frame.i,conflev=conf.lev)
+                    pval.r.df <- pval.ICC2r.inter(frame.i)
+                    pval.a.df <- pvals.ICC2a.inter(frame.i,gam.zero = c(0,0.1,0.3,0.5,0.7,0.9))
+                    var.stats <- round(c(icc.df$sig2s,icc.df$sig2r,icc.df$sig2e,icc.df$sig2sr),3)
+                    coeff.stats <- round(c(icc.df$icc2r,icc.df$icc2a),3)
+                    ci.inter.stats <- paste0("(",round(ci.r.df$lcb,2)," to ",round(ci.r.df$ucb,2),")")
+                    pval.inter.stats <- pval.r.df$pval
+                    ci.intra.stats <- paste0("(",round(ci.a.df$lcb,2)," to ",round(ci.a.df$ucb,2),")")
+                    pval.intra.stats <- pval.a.df$pval
+                  }
+                  else{
+                    icc.df <- icc2.nointer.fn(frame.i)
+                    ci.r.df <- ci.ICC2r.nointer(frame.i,conflev=conf.lev)
+                    ci.a.df <- ci.ICC2a.nointer(frame.i,conflev=conf.lev)
+                    pval.r.df <- pvals.ICC2r.nointer(frame.i,rho.zero = c(0,0.1,0.3,0.5,0.7,0.9))
+                    pval.a.df <- pvals.ICC2a.nointer(frame.i,gam.zero = c(0,0.1,0.3,0.5,0.7,0.9))
+                    var.stats<-round(c(icc.df$sig2s,icc.df$sig2r,icc.df$sig2e,0),3)
+                    coeff.stats <- round(c(icc.df$icc2r,icc.df$icc2a),3)
+                    ci.inter.stats <- paste0("(",round(ci.r.df$lcb,2)," to ",round(ci.r.df$ucb,2),")")
+                    pval.inter.stats <- pval.r.df$pval
+                    ci.intra.stats <- paste0("(",round(ci.a.df$lcb,2)," to ",round(ci.a.df$ucb,2),")")
+                    pval.intra.stats <- pval.a.df$pval
+                  }
+                }else{
+                  if (input$optICC3R.2Way=="model3"){
+                    if (input$chkInteraction3RR){
+                      icc.df <- icc3.inter.fn(frame.i)
+                      ci.r.df <- ci.ICC3r.inter(frame.i,conflev=conf.lev)
+                      ci.a.df <- ci.ICC3a.inter(frame.i,conflev=conf.lev)
+                      pval.r.df <- pvals.ICC3r.inter(frame.i,rho.zero = c(0,0.1,0.3,0.5,0.7,0.9))
+                      pval.a.df <- pvals.ICC3a.inter(frame.i,gam.zero = c(0,0.1,0.3,0.5,0.7,0.9))
+                      var.stats <- round(c(icc.df$sig2s,0,icc.df$sig2e,icc.df$sig2sr),3)
+                      coeff.stats <- round(c(icc.df$icc2r,icc.df$icc2a),3)
+                      ci.inter.stats <- paste0("(",round(ci.r.df$lcb,2)," to ",round(ci.r.df$ucb,2),")")
+                      pval.inter.stats <- pval.r.df$pval
+                      ci.intra.stats <- paste0("(",round(ci.a.df$lcb,2)," to ",round(ci.a.df$ucb,2),")")
+                      pval.intra.stats <- pval.a.df$pval
+                    }
+                    else{
+                      icc.df <- icc3.nointer.fn(frame.i)
+                      ci.r.df <- ci.ICC3r.nointer(frame.i,conflev=conf.lev)
+                      pval.r.df <- pvals.ICC3r.nointer(frame.i,rho.zero = c(0,0.1,0.3,0.5,0.7,0.9))
+                      var.stats <-round(c(icc.df$sig2s,0,icc.df$sig2e,0),3)
+                      coeff.stats <- round(c(icc.df$icc2r,icc.df$icc2a),3)
+                      ci.inter.stats <- paste0("(",round(ci.r.df$lcb,2)," to ",round(ci.r.df$ucb,2),")")
+                      pval.inter.stats <- pval.r.df$pval
+                      ci.intra.stats <- "N/A"
+                      pval.intra.stats <- rep(0,6)
+                    }
+                  }
+                }
+              }
+            }
+            g.stats <- c(icc.df$n, icc.df$r,icc.df$max.rep,icc.df$min.rep,icc.df$Mtot,round(icc.df$ov.mean,3),
+                         var.stats,coeff.stats,ci.inter.stats,pval.inter.stats,ci.intra.stats,pval.intra.stats)
+            return(g.stats)
+        }) #lapply(1:gIndex.max, function(i){
+
+        df.descriptive[,c(2:(gIndex.max+1))] <- as.data.frame(d.stats)
+
+        #Extract and apply scientific format to p-values associated with inter-rater reliability
+        x1.pvals <- as.matrix(df.descriptive[14:19,c(2:(gIndex.max+1))]) #Extract p-values
+        x2.pvals <- formatC(apply(x1.pvals,2,as.numeric),format="e",digits=3) #apply scientific format to p-values
+        xlabels <- sapply(df.descriptive[14:19,1],function (y) if(class(y)=="factor" ) as.character(y) else y) #create p-value labels
+        pval.inter.df <- cbind(xlabels,x2.pvals)
+        colnames(pval.inter.df)[1] <- "Null Value"
+        if (nb.groups==1) colnames(pval.inter.df)[2] <- "P-value"
+
+        #Extract and apply scientific format to p-values associated with intra-rater reliability
+        x1.pvals <- as.matrix(df.descriptive[21:26,c(2:(gIndex.max+1))]) #Extract p-values
+        x2.pvals <- formatC(apply(x1.pvals,2,as.numeric),format="e",digits=3) #apply scientific format to p-values
+        xlabels <- sapply(df.descriptive[21:26,1],function (y) if(class(y)=="factor" ) as.character(y) else y) #create p-value labels
+        pval.intra.df <- cbind(xlabels,x2.pvals)
+        colnames(pval.intra.df)[1] <- "Null Value"
+        if (nb.groups==1) colnames(pval.intra.df)[2] <- "P-value"
+        ### Computing confidence intervals
+        coeff.inter.df <-  rbind(df.descriptive[11,],df.descriptive[13,])
+        coeff.intra.df <-  rbind(df.descriptive[12,],df.descriptive[20,])
+        colnames(coeff.inter.df)[1] <- ""
+        colnames(coeff.intra.df)[1] <- ""
+        if (input$optIccModel3R=="model1A")varcom.df <- rbind(df.descriptive[7,],df.descriptive[9,])
+        else{
+          if (input$optIccModel3R=="model1B")varcom.df <- rbind(df.descriptive[8,],df.descriptive[9,])
+          else{
+            if (input$optIccModel3R=="model2or3" & input$optICC3R.2Way=="model2"){
+              if (input$chkInteraction3RR)varcom.df <- df.descriptive[7:10,]
+              else varcom.df <- df.descriptive[7:9,]
+            }else{
+                if (input$optICC3R.2Way=="model3"){
+                  if (input$chkInteraction3RR)varcom.df <- rbind(df.descriptive[7,],df.descriptive[9:10,])
+                  else varcom.df <- rbind(df.descriptive[7,],df.descriptive[9,])
+                } #if (input$optICC3R.2Way=="model3"){
+            }#if (input$optIccModel3R=="model2or3" & input$optICC3R.2Way=="model2"){
+          }
+        }
+        output$gridOut.descrip.icc <- renderTable(df.descriptive[1:6,],rownames = FALSE,colnames = ColNamesPRT,bordered = TRUE,spacing = 'xs',striped = TRUE)
+        output$gridOut.varcomp.icc <- renderTable(varcom.df,rownames = FALSE,colnames = ColNamesPRT,bordered = TRUE,spacing = 'xs',striped = TRUE)
+
+        descrip3RR.ICC <- df.descriptive[1:6,]
+        varcomp3RR.ICC <- varcom.df
+        colnames(varcomp3RR.ICC)[1] <- "Variance components"
+        out3RR.ICC.tables <- c("descrip3RR.ICC,varcomp3RR.ICC") #out3RR.ICC.tables contains the list of tables produced that will be exported to the PDF file.
+        if (!is.null(titANOVA3RR$inter)){
+          output$gridOut.inter.icc <- renderTable(coeff.inter.df,rownames = FALSE,colnames = ColNamesPRT,bordered = TRUE,spacing = 'xs',striped = TRUE)
+          output$tit.pval.inter.icc <- renderUI(HTML(paste0("<i><font size=3> P-value for various ICC/Inter-rater levels</font></i>")))
+          output$gridOut3RR.pval.inter.icc  <- renderTable(pval.inter.df,rownames = FALSE,colnames = TRUE,bordered = TRUE,spacing = 'xs',striped = TRUE)
+          out3RR.ICC.tables <- paste0(out3RR.ICC.tables,",coeff.inter.df,pval.inter.df")
+        }else{
+          output$gridOut.inter.icc <- renderTable(return())
+          output$tit.pval.inter.icc <- renderUI(return())
+          output$gridOut3RR.pval.inter.icc <- renderUI(return())
+        }
+        if (!is.null(titANOVA3RR$intra)){
+          output$gridOut.intra.icc <- renderTable(coeff.intra.df,rownames = FALSE,colnames = ColNamesPRT,bordered = TRUE,spacing = 'xs',striped = TRUE)
+          output$tit.pval.intra.icc <- renderUI(HTML(paste0("<i><font size=3> P-value for various ICC/Intra-rater levels</font></i>")))
+          output$gridOut3RR.pval.intra.icc  <- renderTable(pval.intra.df,rownames = FALSE,colnames = TRUE,bordered = TRUE,spacing = 'xs',striped = TRUE)
+          out3RR.ICC.tables <- paste0(out3RR.ICC.tables,",coeff.intra.df,pval.intra.df")
+        }else{
+          output$gridOut.intra.icc <- renderTable(return())
+          output$tit.pval.intra.icc <- renderUI(return())
+          output$gridOut3RR.pval.intra.icc <- renderUI(return())
+        }
+        out3RR.ICC.lst <- eval(parse(text=paste0("list(",out3RR.ICC.tables,")")))
+        isprinted3RR.ICC$ct<-TRUE
+        PDF.exportICC.fn(out3RR.ICC.lst,3,"ExportPDF3RR.ICC",pdftit3RR0.ICC,
+                         pdftit3RR1.ICC,pdftit3RR2.ICC,pdftit3RR3.ICC,
+                         pdftit3RR4.ICC,pdftit3RR5.ICC,pdftit3RR6.ICC,pdftit3RR6r.ICC,
+                         pdftit3RR7.ICC,pdftit3RR7a.ICC)
+    }) #observeEvent(input$cmdExecute3RR.ICC,{
+
+
+
+    #--------------------------------------------#
+    #                                            #
+    #  Treatment of the distribution of 3 raters #
+    #  or more by subject and categories         #
+    #  ========================================= #
+    #                                            #
+    #--------------------------------------------#
+
+    shinyjs::disable("optMethod3RD2") #disable the ICC analysis option
+    shinyjs::disable("chkkappa3RD") #disable the option for calculating Conger's Kappa
+    shinyjs::disable("chkpct3RD") # Percent agreement is always computed
+    shinyjs::disable("header3RD") # Percent agreement is always computed
+
+    observeEvent(input$Reset3RD,{
+      reset("file3RD")
+    })
+
+    # The coefficients3RD.f function returns a data frame containing all coefficients
+    coefficients3RD.f <- function(fra.ratings.dist, wtmat.p,conf.lev){
+      q = nrow(wtmat.p)
+      n <- nrow(fra.ratings.dist)
+      coeffmat.p <- data.frame()
+      if (input$chkac13RD==TRUE) coeffmat.p = rbind(coeffmat.p,gwet.ac1.dist(fra.ratings.dist,weights=wtmat.p,conflev=conf.lev,N=Inf))
+      if (input$chkpi3RD==TRUE) coeffmat.p = rbind(coeffmat.p,fleiss.kappa.dist(fra.ratings.dist,weights=wtmat.p,conflev=conf.lev,N=Inf))
+      if (input$chkalpha3RD==TRUE) coeffmat.p = rbind(coeffmat.p,krippen.alpha.dist(fra.ratings.dist,weights=wtmat.p,conflev=conf.lev,N=Inf))
+      if (input$chkkbp3RD==TRUE) coeffmat.p = rbind(coeffmat.p,bp.coeff.dist(fra.ratings.dist,weights=wtmat.p,conflev=conf.lev,N=Inf))
+      coeffmat.p = rbind(coeffmat.p,pa.coeff.dist(fra.ratings.dist,weights=wtmat.p,conflev=conf.lev,N=Inf))
+      return(coeffmat.p)
+    }
+
+    output.tables3RD.f <- function(){
+      out.tabs <- "dist.subjects,fra.Coeff3RD"
+      if (input$optbench3RD !="none") out.tabs <- paste0(out.tabs,",DFR")
+      if (input$chkweighted3RD==TRUE){
+        out.tabs <- paste0(out.tabs,",DF.Weighted3RD")
+        if (input$optbench3RD !='none') out.tabs <- paste0(out.tabs,",WBenchTable")
+        out.tabs <- paste0(out.tabs,",Weights3RD.fra")
+      }
+      return(out.tabs)
+    }
+
+    # Preparing the default dataset
+
+    DF3RD = as.data.frame(rbind(c("Categ 1","Categ 2","Categ 3"),matrix("0",10,3))) #Initial dataset for group analysis (to be modified by user)
+    colnames(DF3RD)=LETTERS[1:3]
+    DF3RD.GRP = as.data.frame(rbind(c("Group","Categ 1","Categ 2","Categ 3"),
+                                    cbind(as.vector(cbind(rep("A",5),rep("B",5))),matrix("0",10,3)
+                                    ))) #Initial dataset for group analysis (to be modified by user)
+    colnames(DF3RD.GRP)=LETTERS[1:4]
+
+    # Reading the external dataset #
+
+    dfra3RD <- reactiveValues(data = DF3RD)
+    output$grid3RDist = renderRHandsontable({
+      if (input$Import3RD==TRUE){
+        inFile <- input$file3RD
+        if (is.null(inFile)) return(NULL)
+        if (isolate(input$ftype3RD)=='csv') DF <- read.csv(inFile$datapath, header = FALSE, sep = input$sep3RD, quote = input$quote3RD)
+        else DF <- read_excel(inFile$datapath,col_names = FALSE)
+        colnames(DF) = LETTERS[1:ncol(DF)]
+      }else{
+        if (input$chkGrp3RD) DF <- DF3RD.GRP
+        else DF <- DF3RD
+      }
+      dfra3RD$data <- DF
+      rhandsontable(DF,selectCallback = TRUE, width=350,height = 450,useTypes = FALSE,rowHeaders = TRUE) %>%
+          hot_context_menu(allowColEdit = TRUE)
+    })
+    observeEvent(input$grid3RDist, { #This is necessary to update the table in realtime
+      dfra3RD$data <- hot_to_r(input$grid3RDist)
+    })
+    observeEvent(input$Reset3RD,{
+      reset("file3RD")
+    })
+
+
+    # The categories3RD.f function returns a vector of unique categories from selected ratings
+
+    categories3RD.f <- function(){
+      catego.vec <- as.vector(unlist(dfra3RD$data[xy3RD.ratings$row1,xy3RD.ratings$col1:xy3RD.ratings$colmax]))
+      nbcat$q <- length(catego.vec)
+      return(catego.vec)
+    }
+
+    # Manage the display of the 'custom weights' tabpanel
+    #---------------------------
+
+
+    #6. Display the template for capturing custom weights
+
+    observeEvent(input$optWtype3RD,{ # Change the selected panel depending on the type of weights needed
+      toggle(condition = (input$optWtype3RD =='cusw' & input$chkweighted3RD==TRUE), #display the custom-weight panel without showing it
+             selector = "#TabId3RD li a[data-value=panel4R3D]")
+      if (input$optWtype3RD =='cusw') {
+        updateTabsetPanel(session, "TabId3RD", selected = "panel4R3D") #Show the custom-weight panel (NB: this panel must first be displayed with toggle command)
+        catvec <- categories3RD.f()
+        output$crowcategs2RD <-renderUI({
+          fluidRow(
+            column(1, helpText("")),
+            lapply(1:nbcat$q, function(j) {
+              column(width=1, helpText(substr(catvec[j],1,6)),offset=0)
+            })
+          )
+        })
+        output$cweights2RD <-renderUI(
+          lapply(1:nbcat$q, function(i) {
+            fluidRow(
+              column(width=1, helpText(substr(catvec[i],1,6),align="center"),offset=0),
+              lapply(1:nbcat$q, function(j) {
+                if (i==j){
+                  column(width=1, disabled(textInput(paste0("wCells3RD",i,j), label = NULL,value = "1")),
+                         tags$style(type='text/css',paste0("#wCells3RD",i,j," {width: 60px;text-align:center;}")),offset = 0)
+                } else{
+                  column(width=1, textInput(paste0("wCells3RD",i,j), label = NULL,value = "0"),
+                         tags$style(type='text/css',paste0("#wCells3RD",i,j," {width: 60px;text-align:center;}")),offset = 0)
+                }
+              })
+            )
+          })
+        )
+      }else{
+        if (input$chkweighted3RD==TRUE) updateTabsetPanel(session, "TabId3RD", selected = "panel2R3D")
+      } #if (input$optWtype3RD =='cusw') {
+    })
+
+    #- User-defined function to read the contingency table of custom weights for the 2RR case
+
+    read.cweights3RD <- function(catego.vec){
+      q <- length(catego.vec)
+      nkl.mat <- matrix(0,q,q)
+      for (k in 1:q){
+        for (l in 1:q){
+          nkl.mat[k,l] <- as.numeric(input[[paste0('wCells3RD',k,l)]])
+        }
+      }
+      nkl.mat
+    }
+
+
+    #
+    # Describe the initial ratings selected by default
+    # ------------------------------------------------
+    #
+    xy3RD.ratings <- reactiveValues(row1=1,row2=1,col1=1,colmax=1) #store rating data coordinates
+    xy3RD.grp <- reactiveValues(row1=1,row2=1,colno=1) #store group data coordinates
+    nbcat <- reactiveValues(q=NULL) # store the number of categories
+
+
+    observe({
+      if (is.null(input$vt3RDist)){
+        xy3RD.ratings$row1 <- 1
+        xy3RD.ratings$row2 <- nrow(dfra3RD$data)
+        if (input$chkGrp3RD) xy3RD.ratings$col1 <- 2
+        else xy3RD.ratings$col1 <- 1
+        xy3RD.ratings$colmax <- ncol(dfra3RD$data)
+        xy3RD.grp$row1 <- 1
+        xy3RD.grp$row2 <- nrow(dfra3RD$data)
+        xy3RD.grp$colno <- 1
+      }
+      output$vt3RDGrp <- renderUI(HTML(paste0("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Group data:<b>",LETTERS[xy3RD.grp$colno],xy3RD.grp$row1,":",LETTERS[xy3RD.grp$colno],xy3RD.grp$row2,"</b>")))
+      output$vt3RDist <- renderUI(HTML(paste0("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Raters' data:<b>",LETTERS[xy3RD.ratings$col1],xy3RD.ratings$row1,":",LETTERS[xy3RD.ratings$colmax],xy3RD.ratings$row2,"</b>")))
+    })
+
+    # Capturing rating data that are highligted by the user
+
+    observeEvent(input$abConfirm3RDGR,{ #selecting group data
+      xmin$i <- input$grid3RDist_select$select$r
+      xmin$j <- input$grid3RDist_select$select$c
+      xmax$i <- input$grid3RDist_select$select$r2
+      xmax$j <- input$grid3RDist_select$select$c2
+      if (!is.null(xmin$i)){
+        xy3RD.grp$row1 <- isolate(xmin$i)
+        xy3RD.grp$row2 <- isolate(xmax$i)
+        xy3RD.grp$colno <- isolate(xmin$j)
+      }
+    })
+    observeEvent(input$abConfirm3RD,{ #selecting rater 1's data
+      xmin$i <- input$grid3RDist_select$select$r
+      xmin$j <- input$grid3RDist_select$select$c
+      xmax$i <- input$grid3RDist_select$select$r2
+      xmax$j <- input$grid3RDist_select$select$c2
+      if (!is.null(xmin$i)){
+        xy3RD.ratings$row1 <- xmin$i
+        xy3RD.ratings$row2 <- xmax$i
+        xy3RD.ratings$col1 <- xmin$j
+        xy3RD.ratings$colmax <- xmax$j
+      }
+    })
+
+    # EXECUTION:  Creating the final dataset of ratings and computing agreement coefficients
+    # ==========
+
+    #---> Preparing for PDF Output
+
+    isprinted3RD <- reactiveValues(ct=NULL) # reactive value, which is NULL if no output is TRUE if there is output
+    ItemsUnweighted3RD <- reactiveValues(tab=NULL) #ItemsUnweighted contains unweighted analysis output items to be saved as a PDF file
+    ItemsWeighted3RD <- reactiveValues(tab=NULL) #ItemsWeighted contains weighted analysis output items to be saved as a PDF file
+    observe({
+        output$Download3RD.ICC <- renderUI(return())
+        if (input$TabId3RD=="panel3R3RD" & !is.null(isprinted3RD$ct))
+          output$Download3RD.CAC <- renderUI({downloadButton('ExportPDF3RD.CAC', 'Save Output/cac2')})
+        else output$Download3RD.CAC <- renderUI(return()) #NULL
+    })
+    bench.request3RD <- reactiveValues(BR=FALSE) # This reactive object stores the reactive value bench.request3RR$BR that will become TRUE as soon as the first benchmarking is placed.
+    bench.request.w3RD <- reactiveValues(WBR=FALSE) # Equivalent of bench.request3RR for weighted coefficients
+
+    ##################  --->>   EXECUTE / 3RD: DISTRIBUTION OF RATERS  <<---------------
+
+    observeEvent(input$cmdExecute3xD,{
+      updateTabsetPanel(session, "TabId3RD", selected = "panel3R3RD") # Once the execute button is pressed the "Output" tabpanel must be selected
+      # collecting rating data
+      catvec <- as.vector(unlist(dfra3RD$data[xy3RD.ratings$row1,xy3RD.ratings$col1:xy3RD.ratings$colmax]))
+      xy3RD.ratings.row1 <- xy3RD.ratings$row1+1
+      if (input$chkGrp3RD){
+        # collecting group information
+        if (input$header3RDGR){
+          grp.label <- as.vector(unlist(dfra3RD$data[xy3RD.ratings$row1,xy3RD.grp$colno]))
+          xy3RD.grp.row1 <- xy3RD.grp$row1+1
+        } else{
+          grp.label <- "Group"
+          xy3RD.grp.row1 <- xy3RD.grp$row1
+        }
+        min.row1 <- min(xy3RD.grp.row1,xy3RD.ratings.row1)
+        max.row1 <- max(xy3RD.grp.row1,xy3RD.ratings.row1)
+        min.row2 <- min(xy3RD.grp$row2,xy3RD.ratings$row2)
+        max.row2 <- max(xy3RD.grp$row2,xy3RD.ratings$row2)
+        DF.3RD <- cbind(dfra3RD$data[max.row1:min.row2,xy3RD.grp$colno],dfra3RD$data[max.row1:min.row2,xy3RD.ratings$col1:xy3RD.ratings$colmax])
+        colnames(DF.3RD) <- c(grp.label,catvec)
+      }else{
+        ratings.r3 <- as.matrix(dfra3RD$data[xy3RD.ratings.row1:xy3RD.ratings$row2,xy3RD.ratings$col1:xy3RD.ratings$colmax])
+        DF.3RD <- cbind(rep(1,nrow(ratings.r3)),as.data.frame(ratings.r3))
+        colnames(DF.3RD) <- c("Group",as.vector(catvec))
+      }
+      fra3RD.mat <- as.matrix(DF.3RD) # This matrix created from a data frame
+      #save(DF.3RD, file = "DF3RD.RData")
+
+      #7.2 Prepare subject and rater statistics by category
+
+      fra3RD.mat <- fra3RD.mat[order(fra3RD.mat[,1]),] # sorting the matrix by group
+      groups.vec <- unique(na.omit(as.vector(unlist(fra3RD.mat[,1])))) # getting list of group names
+      grps.freqs <- plyr::count(as.data.frame(fra3RD.mat),colnames(fra3RD.mat)[1])
+      n.tot <- sum(as.numeric(as.matrix(grps.freqs)[,2]))
+      grps.freqs <- rbind(as.matrix(grps.freqs),c("Overall",n.tot))
+      nb.groups <- length(groups.vec)
+
+      #define row.pos1 and row.pos2, the first and last rows in the data table fra3RR.mat defining each group ratings. These 2 are needed to extract group data for subgroup analysis.
+
+      row.pos1 <- rep(1,(nb.groups+1))
+      row.pos2 <- rep(1,(nb.groups+1))
+      for(i in 1:(nb.groups+1)){
+        if (i<=1 | i>nb.groups){
+          row.pos1[i] <-1
+          row.pos2[i] <- as.numeric(grps.freqs[i,2])
+        }else{
+          row.pos1[i] <- row.pos2[i-1] + 1
+          row.pos2[i] <- row.pos2[i-1] + as.numeric(grps.freqs[i,2])
+        }
+      }
+      grps.freqs <- cbind(grps.freqs,row.pos1,row.pos2)
+
+      if (nb.groups==1) gIndex.max <- 1 #gIndex.max represents the total number of groups to process
+      else gIndex.max <- nb.groups+1 #The supplementary group here if the ALL group comprising all groups
+
+      coeff.cols[4] <- paste0(input$cmbclev3RD,"%conf.interv") # add the correct confidence level to the output table column labels
+
+      # CREATING NEEDED USER'S INTERFACE (ui) OBJECTS  ######
+      # -----------------------------------------------------
+
+      # if no subgroup analysis then one tableOutput "gridOut3RR" for example, is sufficient to output unweighted stats.
+      # If subgroup analysis is requested then we must build a tabsetpanel with one tabpanel element by group.
+
+      if (gIndex.max==1){
+        output$ui.dist3RD <- renderUI({
+          div(
+            fluidRow(column(width=1),column(width=11,uiOutput("catLabel3RD"))),
+            fluidRow(column(width=1,uiOutput("raterLabel3RD")),column(width=11,tableOutput("gridCont3RD")))
+          )
+        })
+        output$ui.Unweigted3RD <- renderUI(tableOutput("gridOut3RD"))
+        if (input$optbench3RD !="none") output$ui.UnweigtBench3RD <- renderUI(tableOutput("gridOutBenchU3RD"))
+        if (input$chkweighted3RD==TRUE){
+          output$ui.Weigted3RD <- renderUI(tableOutput("gridOutWted3RD"))
+          if (input$optbench3RD !="none") output$ui.WeigtedBench3RD <- renderUI(tableOutput("gridOutBenchW3RD"))
+        }
+        groups.vec.all <- groups.vec
+      }
+      else{ #if (gIndex.max==1){
+        groups.vec.all <- c(groups.vec,"ALL")
+        for (k in 1:gIndex.max){
+          if (k==1){
+            tab.elements.ct <- paste0("tabPanel('",groups.vec.all[k],"',br(),",
+                                      "fluidRow(column(width=1),column(width=11,uiOutput('catLabel3RD.",k,"'))),",
+                                      "fluidRow(column(width=1,uiOutput('raterLabel3RD.",k,"')),column(width=11,tableOutput('gridCont3RD.",k,"')))),"
+            )
+            tab.elements.uw <- paste0("tabPanel('",groups.vec.all[k], "',tableOutput('gridOut3RD.",k,"')),")
+            tab.elements.uwb <- paste0("tabPanel('",groups.vec.all[k], "',tableOutput('gridOutBenchU3RD.",k,"')),")
+            tab.elements.wted <- paste0("tabPanel('",groups.vec.all[k], "',tableOutput('gridOutWted3RD.",k,"')),")
+            tab.elements.wtedb <- paste0("tabPanel('",groups.vec.all[k], "',tableOutput('gridOutBenchW3RD.",k,"')),")
+          }
+          else{
+            if (k==gIndex.max){
+              tab.elements.ct <- paste0(tab.elements.ct,
+                                        "tabPanel('",groups.vec.all[k], "',br(),",
+                                        "fluidRow(column(width=1),column(width=11,uiOutput('catLabel3RD.",k,"'))),",
+                                        "fluidRow(column(width=1,uiOutput('raterLabel3RD.",k,"')),column(width=11,tableOutput('gridCont3RD.",k,"'))))"
+              )
+              tab.elements.uw <- paste0(tab.elements.uw,"tabPanel('",groups.vec.all[k], "',tableOutput('gridOut3RD.",k,"'))")
+              tab.elements.uwb <- paste0(tab.elements.uwb,"tabPanel('",groups.vec.all[k], "',tableOutput('gridOutBenchU3RD.",k,"'))")
+              tab.elements.wted <- paste0(tab.elements.wted,"tabPanel('",groups.vec.all[k], "',tableOutput('gridOutWted3RD.",k,"'))")
+              tab.elements.wtedb <- paste0(tab.elements.wtedb,"tabPanel('",groups.vec.all[k], "',tableOutput('gridOutBenchW3RD.",k,"'))")
+            }
+            else{
+              tab.elements.ct <- paste0(tab.elements.ct,
+                                        "tabPanel('",groups.vec.all[k],"',br(),",
+                                        "fluidRow(column(width=1),column(width=11,uiOutput('catLabel3RD.",k,"'))),",
+                                        "fluidRow(column(width=1,uiOutput('raterLabel3RD.",k,"')),column(width=11,tableOutput('gridCont3RD.",k,"')))),"
+              )
+              tab.elements.uw <- paste0(tab.elements.uw,"tabPanel('",groups.vec.all[k], "',tableOutput('gridOut3RD.",k,"')),")
+              tab.elements.uwb <- paste0(tab.elements.uwb,"tabPanel('",groups.vec.all[k], "',tableOutput('gridOutBenchU3RD.",k,"')),")
+              tab.elements.wted <- paste0(tab.elements.wted,"tabPanel('",groups.vec.all[k], "',tableOutput('gridOutWted3RD.",k,"')),")
+              tab.elements.wtedb <- paste0(tab.elements.wtedb,"tabPanel('",groups.vec.all[k], "',tableOutput('gridOutBenchW3RD.",k,"')),")
+            }
+          } #END OF if (k==1){
+
+        } # END OF for (k in 1:gIndex.max){
+        tabset.distrib3RD <- paste0("output$ui.dist3RD <- renderUI({tabsetPanel(id = 'distrib.panel3RD',",tab.elements.ct,")})")
+        tabset.unweighted3RD <- paste0("output$ui.Unweigted3RD <- renderUI({tabsetPanel(id = 'unweighted.panel3RD',",tab.elements.uw,")})")
+        tabset.uwtedBench3RD <- paste0("output$ui.UnweigtBench3RD <- renderUI({tabsetPanel(id = 'unbench.panel3RD',",tab.elements.uwb,")})")
+        tabset.weighted3RD <- paste0("output$ui.Weigted3RD <- renderUI({tabsetPanel(id = 'weighted.panel3RD',",tab.elements.wted,")})")
+        tabset.wtedBench3RD <- paste0("output$ui.WeigtedBench3RD <- renderUI({tabsetPanel(id = 'wtedbench.panel3RD',",tab.elements.wtedb,")})")
+
+        eval(parse(text=tabset.distrib3RD))
+        eval(parse(text=tabset.unweighted3RD))
+        if (input$optbench3RD !="none") eval(parse(text=tabset.uwtedBench3RD))
+        if (input$chkweighted3RD==TRUE){
+          eval(parse(text=tabset.weighted3RD))
+          if (input$optbench3RD !="none") eval(parse(text=tabset.wtedBench3RD))
+        }else output$ui.Weigted3RD <- renderUI(HTML(""))
+      } #END OF ---> if (gIndex.max==1){
+
+      # END OF CREATION OF USER INTERFACE OBJECTS
+      # -----------------------------------------
+
+
+      # Printing out various titles associated with unweighted coefficients
+
+      output$titDist3RD <- renderUI(HTML("<b>SUBJECT AND RATER STATISTICS BY CATEGORY</b>"))
+      output$hline3RD <- renderUI(tags$hr(style="border-color: purple;"))
+      output$titCoeff3RD <- renderUI(HTML("<b>INTER-RATER RELIABILITY COEFFICIENTS & ASSOCIATED PRECISION MEASURES</b>"))
+      output$titUnWt3RD <- renderUI(HTML("<br>Unweighted Agreement Coefficients<br>"))
+      if (input$optbench3RD !="none"){
+        output$hline.bench3RD <- renderUI(tags$hr(style="border-color: purple;"))
+        bench.name <- switch (input$optbench3RD,
+                              lk = "Landis-Koch",
+                              altman = "Altman",
+                              fleiss = "Fleiss"
+        )
+        output$titBench1U3RD <- renderUI(HTML("<b>",paste0(bench.name," Interpretation of Unweighted Agreement Coefficients</b>")))
+        output$titBench2U3RD <- renderUI(HTML("Benchmarking Unweighted Coefficients using Cumulative Membership Probabilities"))
+        bench.request3RD$BR <- TRUE #Indicator that a benchmarking has been printed
+      }else{
+        if (bench.request3RD$BR){
+          bench.request3RD$BR <- FALSE
+          output$ui.UnweigtBench3RD <- renderUI(HTML(""))
+        }
+        output$hline.bench3RD <- renderUI(HTML(""))
+        output$titBench1U3RD <- renderUI(HTML(""))
+        output$titBench2U3RD <- renderUI(HTML(""))
+        output$titBench1W3RD <- renderUI(HTML(""))
+        output$titBench2W3RD <- renderUI(HTML(""))
+      } #END OF --> if (input$optbench3RD !="none"){
+
+      # Printing out various titles associated with weighted coefficients as well as the weight matrix
+
+      if (input$chkweighted3RD==TRUE){
+        output$hlineWted3RD <- renderUI(tags$hr(style="border-color: purple;"))
+        Weights3RD <- WeightsGen.f(catvec,input$chkweighted3RD,input$optWtype3RD,input$optweights3RD,"3D")$wmat
+        Wt.title3RD <- WeightsGen.f(catvec,input$chkweighted3RD,input$optWtype3RD,input$optweights3RD,"3D")$wtit
+        output$titWted3RD <- renderUI(HTML(paste0("Weighted Agreement Coefficients (",Wt.title3RD,")")))
+        # Output the weight matrix
+        output$titWtype3RD <- renderUI(HTML(Wt.title3RD))
+        Weights3RD.fra <- as.data.frame(formatC(Weights3RD,format="f",digits=4)) #Printing the weight matrix used to compute weighted agreement coefficients
+        colnames(Weights3RD.fra) <- catvec
+        rownames(Weights3RD.fra) <- catvec
+        output$gridOutWeights3RD = renderTable(Weights3RD.fra,rownames = TRUE,colnames = TRUE,bordered = TRUE,spacing = 'xs')
+
+        # Processing the benchmarking of the weighted agreement coefficients if necessary
+
+        if (input$optbench3RD !='none'){
+          output$titBench1W3RD <- renderUI(HTML("<b>",paste0(bench.name," Interpretation of Weighted Agreement Coefficients</b>")))
+          output$titBench2W3RD <- renderUI(HTML("Benchmarking Weighted Coefficients using Cumulative Membership Probabilities"))
+          #            dftit3RC2W<-textGrob(paste0(bench.name," Interpretation of Weighted Agreement Coefficients</b>"),gp=gpar(size=12,font=3))
+          bench.request.w3RD$WBR <- TRUE
+        }else{
+          if (bench.request.w3RD$WBR){
+            output$ui.WeigtedBench3RD <- renderUI(HTML(""))
+            output$gridOutBenchW3RD <- renderTable(data.frame())
+            bench.request.w3RD$WBR <- FALSE
+          }
+          output$titBench1W3RD <- renderUI(HTML(""))
+          output$titBench2W3RD <- renderUI(HTML(""))
+        }
+      }else{
+        #   #ItemsWeighted$tab<-NULL
+        output$gridOutWted3RD <- renderTable(data.frame())
+        output$titWted3RD <- renderUI(HTML(""))
+        output$titWtype3RD <- renderUI(HTML(""))
+        output$gridOutWeights3RD <- renderTable(data.frame())
+        if (bench.request.w3RD$WBR){
+          output$ui.WeigtedBench3RD <- renderUI(HTML(""))
+          output$gridOutBenchW3RD <- renderTable(data.frame())
+          output$titBench1W3RD <- renderUI(HTML(""))
+          output$titBench2W3RD <- renderUI(HTML(""))
+          bench.request.w3RD$WBR <- FALSE
+        }
+      } #End OF if (input$chkweighted3RD==TRUE){
+
+
+      ### Preparing the titles to be used in the PDF export file
+
+      pdftit3RD1 <- textGrob("Subject and Rater Statistics by Category",gp=gpar(size=14,font=2))
+      pdftit3RD2 <- textGrob("INTER-RATER RELIABILITY COEFFICIENTS & ASSOCIATED PRECISION MEASURES",gp=gpar(size=14,font=2))
+      pdftit3RD3 <- textGrob("Unweighted Agreement Coefficients",gp=gpar(size=12,font=2))
+      if (input$optbench3RD !="none"){
+        pdftit3RD4 <- textGrob(paste0(bench.name," Interpretation of Unweighted Agreement Coefficients"),gp=gpar(size=12,font=2))
+      }
+      pdftit3RD5 <- textGrob("Benchmarking Unweighted Coefficients using Cumulative Membership Probabilities",gp=gpar(size=12,font=3))
+      if (input$chkweighted3RD==TRUE){
+        pdftit3RD6 <- textGrob(paste0("Weighted Agreement Coefficients (",Wt.title3RD,")"),gp=gpar(size=12,font=2))
+        if (input$optbench3RD !="none") pdftit3RD7 <- textGrob(paste0(bench.name," Interpretation of Weighted Agreement Coefficients"),gp=gpar(size=12,font=2))
+        pdftit3RD8 <- textGrob("Benchmarking Weighted Coefficients using Cumulative Membership Probabilities",gp=gpar(size=12,font=3))
+        pdftit3RD9 <- textGrob(Wt.title3RD)
+      }
+
+      # Processing all subject groups, one at a time
+
+      ncols <- ncol(fra3RD.mat)
+      r <- max(apply(fra3RD.mat[,2:ncols],1,function(x) max(as.numeric(x))))
+
+      out3RD.tables <- lapply(1:gIndex.max, function(i){
+        # Extract ratings associated with current group
+        gIndex1 <- as.numeric(grps.freqs[i,3])
+        gIndex2 <- as.numeric(grps.freqs[i,4])
+        frame.i <- fra3RD.mat[gIndex1:gIndex2,2:ncol(fra3RD.mat)]
+        # save(frame.i, file = "frame.i")
+
+        #computing the distribution of subjects by category for the current group
+
+        class(frame.i) <- "numeric"
+        nb.subjects.i <- nrow(frame.i)
+        nbycateg <- apply(frame.i,2,function(x) sum(x>0))
+        pbycateg <- formatC(nbycateg/nb.subjects.i,digits=3,format="f")
+        avraters <- formatC(apply(frame.i,2,function(x) sum(x))/nbycateg,digits=3,format="f")
+        min.i <- formattable(apply(frame.i,2,function(x) min(x)),digits=0,format="f")
+        max.i <- formattable(apply(frame.i,2,function(x) max(x)),digits=0,format="f")
+
+        dist.subjects <- rbind(nbycateg,pbycateg,avraters,min.i,max.i)
+        rownames(dist.subjects) <- c("Number of Subjects in Category","Percent Subjects in Category","Average Number of Raters",
+                                     "Minimum Number of Raters","Maximum Number of Raters")
+        colnames(dist.subjects) <- catvec
+
+        conf.lev <- as.numeric(isolate(input$cmbclev3RD))/100
+        # Computing unweighted agreement coefficients
+        fra.Coeff3RD <- coefficients3RD.f(frame.i,identity.weights(catvec),conf.lev)[,c(1:5)]
+        fra.Coeff3RD$coeff <- formatC(fra.Coeff3RD$coeff,digits=3,format="f")
+        fra.Coeff3RD$stderr <- formatC(fra.Coeff3RD$stderr,format="f",digits=3)
+        fra.Coeff3RD$p.value <- formatC(fra.Coeff3RD$p.value,format="e",digits=3)
+        colnames(fra.Coeff3RD) <- c("Method", "Coeff", "StdErr",paste0(input$cmbclev3RD,"% C.I."),"P-Value")
+        if (input$chkweighted3RD==TRUE){# Computing the weighted agreement coefficients for 3-rater analysis
+          DF.Weighted3RD <- coefficients3RD.f(frame.i,Weights3RD,conf.lev)[,c(1:5)] #compute weighted coefficients
+          DF.Weighted3RD$coeff <- format(DF.Weighted3RD$coeff,digits=3)
+          DF.Weighted3RD$stderr <- formatC(DF.Weighted3RD$stderr,format="f",digits=3)
+          DF.Weighted3RD$p.value <- formatC(DF.Weighted3RD$p.value,format="e",digits=3)
+          colnames(DF.Weighted3RD) <- c("Method", "Coeff", "StdErr",paste0(input$cmbclev3RD,"% C.I."),"P-Value")
+          # Processing the benchmarking of the weighted agreement coefficients if requested
+          if (isolate(input$optbench3RD) !='none') WBenchTable <- benchmark.table(DF.Weighted3RD,"3D")
+        }#End of weighted analysis/if (input$chkweighted2RR==TRUE){# Computing the weighted agreement coefficients for 2-rater analysis
+
+        if (gIndex.max==1){
+          output$raterLabel3RD <- renderUI(HTML(paste0("<b> Raters </b>")))
+          output$catLabel3RD <- renderUI(HTML(paste0("<b> Categories </b>")))
+          output$gridCont3RD <- renderTable(dist.subjects,rownames = TRUE,bordered = TRUE,spacing = 'xs')
+          output$gridOut3RD <- renderTable(fra.Coeff3RD,rownames = FALSE,bordered = TRUE,spacing = 'xs',striped = TRUE)
+
+          if (input$optbench3RD !="none"){# Benchmarking unweighted agreement coefficients
+            DFR <- benchmark.table(fra.Coeff3RD,"3D")
+            output$gridOutBenchU3RD = renderTable(DFR,bordered = TRUE,spacing = 'xs')
+            #       #          pdftit2RC3<-textGrob(paste0(bench.name," Interpretation of Unweighted Agreement Coefficients"),gp=gpar(size=12,font=3))
+            #       #          ItemsUnweighted$tab<-paste0(ItemsUnweighted$tab,",pdftit2RC3,tableGrob(DFR,rows=NULL)") #Update the global list of tables that can be exported to a PDF file
+          }else{
+            if (bench.request3RD$BR){
+              output$gridOutBenchU3R = renderTable(data.frame())
+              output$gridOutBenchW3R = renderTable(data.frame())
+            }
+          }#if (input$optbench2RR !="none"){# Benchmarking unweighted agreement coefficients
+
+          if (input$chkweighted3RD==TRUE){# Computing the weighted agreement coefficients for 3-rater analysis
+            # Printing out weighted coefficients
+            # ----------------------------------
+            output$gridOutWted3RD <- renderTable(DF.Weighted3RD,bordered = TRUE,spacing = 'xs',striped = TRUE)
+            # Processing the benchmarking of the weighted agreement coefficients if necessary
+            if (isolate(input$optbench3RD) !='none'){
+              #            dftit3RC2W<-textGrob(paste0(bench.name," Interpretation of Weighted Agreement Coefficients</b>"),gp=gpar(size=12,font=3))
+              output$gridOutBenchW3RD <- renderTable(WBenchTable,bordered = TRUE,spacing = 'xs')
+            }
+          }#End of weighted analysis/if (input$chkweighted2RR==TRUE){# Computing the weighted agreement coefficients for 2-rater analysis
+        }
+        else{ #if (gIndex.max==1){
+          output[[paste0('raterLabel3RD.',i)]] <- renderUI(HTML(paste0("<b> Raters </b>")))
+          output[[paste0('catLabel3RD',i)]] <- renderUI(HTML(paste0("<b> Categories </b>")))
+          output[[paste0('gridCont3RD.',i)]] <- renderTable(dist.subjects,rownames = TRUE,bordered = TRUE,spacing = 'xs')
+          output[[paste0('gridOut3RD.',i)]] <- renderTable(fra.Coeff3RD,rownames = FALSE,bordered = TRUE,spacing = 'xs',striped = TRUE)
+          if (input$optbench3RD !="none"){
+            DFR <- benchmark.table(fra.Coeff3RD,"3D")
+            output[[paste0('gridOutBenchU3RD.',i)]] <- renderTable(DFR,rownames = FALSE,bordered = TRUE,spacing = 'xs')
+          }
+          if (input$chkweighted3RD==TRUE){# Computing the weighted agreement coefficients for 2-rater analysis
+            output[[paste0('gridOutWted3RD.',i)]] <- renderTable(DF.Weighted3RD,bordered = TRUE,spacing = 'xs',striped = TRUE) # Printing out weighted coefficients
+            # Processing the benchmarking of the weighted agreement coefficients if necessary
+            if (input$optbench3RD !='none'){
+              #WBenchTable <- benchmark.table(DF.Weighted3RD,"3R")
+              output[[paste0('gridOutBenchW3RD.',i)]] <- renderTable(WBenchTable,bordered = TRUE,spacing = 'xs')
+            }
+          }#End of weighted analysis/if (input$chkweighted2RR==TRUE){# Computing the weighted agreement coefficients for 2-rater analysis
+        } #END OF -->>> if (gIndex.max==1){
+        eval(parse(text=paste0("list(",output.tables3RD.f(),")"))) #Here is where the list of output tables is created
+      }) #lapply(1:gIndex.max, function(i) /END of sub-group treatment
+
+      PDF.exportCAC.fn(out3RD.tables,"ExportPDF3RD.CAC",groups.vec.all,catvec,
+                       pdftit3RD1,pdftit3RD2,pdftit3RD3,
+                       pdftit3RD4,pdftit3RD5,pdftit3RD6,
+                       pdftit3RD7,pdftit3RD8,pdftit3RD9)
+      isprinted3RD$ct<-TRUE
+    }) # END OF observeEvent(input$cmdExecute3xD,{
+  }
+)

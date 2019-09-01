@@ -22,7 +22,7 @@ library(irrCAC)
 
 # Abstract
 
-The **irrCAC** is an R package that provides several functions for calculating various chance-corrected agreement coefficients. This package closely follows the general framework of inter-rater reliability assessment presented by Gwet (2014). The document [1.overview.html](1.overview.html) provides a broad overview of the different ways you may compute various agreement coefficients using the irrCAC package.  However, it is common for researchers to want to compute the weighted versions of agreement coefficients in order to account for the ordinal nature of some ratings.
+The **irrCAC** is an R package that provides several functions for calculating various chance-corrected agreement coefficients. This package closely follows the general framework of inter-rater reliability assessment presented by Gwet (2014). The document [overview.html](overview.html) provides a broad overview of the different ways you may compute various agreement coefficients using the irrCAC package.  However, it is common for researchers to want to compute the weighted versions of agreement coefficients in order to account for the ordinal nature of some ratings.
 
 This document shows you how to specify the weights to comnpute the weighted kappa coefficient, the weighted $\mbox{AC}_2$ coefficient and many others. 
 

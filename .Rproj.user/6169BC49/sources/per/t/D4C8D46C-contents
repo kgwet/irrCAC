@@ -1,0 +1,1196 @@
+#------- ui.R
+#==============
+#install.packages("shinyjs")
+#install.packages("rhandsontable")
+#install.packages("stringr")
+#install.packages("plyr")
+library(shiny)
+library(shinyjs)
+library(rhandsontable)
+library(stringr)
+library(tidyverse)
+library(readxl)
+shinyUI(fluidPage(
+  h1("AgreeStat 2019.01 ",
+     style = "font-family: 'lobster',cursive;
+     font-weight: 700;
+     color: #ffff00; text-align: center;
+     background-color: #00008b;
+     padding: 10px",
+     HTML('<font size="3">&#169 2014-2019 K. Gwet, PhD</font>')
+     ),
+#useShinyjs(),
+shinyjs::useShinyjs(),
+navbarPage("",
+  navbarMenu("2 Raters",
+    #-----------------------------------------#
+    # -     2-RATER CONTINGENCY TABLE         #
+    #       =========================         #
+    #-----------------------------------------#
+    tabPanel("Contingency Table",
+      titlePanel(h3("Analyzing a Contingency Table")),
+      sidebarLayout(
+        #-----------------------  SIDEBAR PANEL ----------------------------
+        sidebarPanel(width=4,
+          helpText("Choose # Categories"),
+          fluidRow(
+              column(width=5,
+                  selectInput("qCateg",
+                      label = NULL,
+                      choices = c(2:12),
+                      selected = "2",width="3cm"
+                  )
+              ),
+              column(width=5,actionButton("cmdExecute2xC", " Execute! ",width='3cm',icon("paper-plane"),
+                    style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),offset = 1
+              )
+          ),
+          fluidRow(
+            column(width=6,checkboxInput("Import2RC", "Import data?")),
+            column(width=1,uiOutput("Download2RC"),offset=0)
+          ),
+          conditionalPanel( # Uploading Files if data to be imported
+            condition="input.Import2RC==true",
+            fluidRow(
+              column(width=10,
+                     radioButtons('ftype2RC', label=NULL,inline=TRUE,
+                                  c("CSV/Text"='csv',
+                                    "Excel" = 'xls')
+                    )
+              )
+          )),
+          conditionalPanel( # Uploading Files if data to be imported
+            condition="input.Import2RC==true",
+            fileInput('f2RCont', 'Choose file to upload',
+                      accept = c(
+                        'text/csv',
+                        'text/comma-separated-values',
+                        'text/tab-separated-values',
+                        'text/plain',
+                        '.csv',
+                        '.tsv',
+                        '.xls',
+                        '.xlsx'
+                      )
+            ),
+            conditionalPanel( # Uploading Files if data to be imported
+              condition="input.ftype2RC=='csv'",
+                radioButtons('sep', 'Separator',inline=TRUE,
+                             c(Comma=',',
+                               Semicolon=';',
+                               Tab='\t'),
+                             ','),
+                radioButtons('quote', 'Quote',inline=TRUE,
+                             c(None='',
+                               'Double'='"',
+                               'Single'="'"),
+                             '"')
+            ),
+            actionButton("Reset2Cont", "Reset Input File")
+          )
+        ), #-- sidebarPanel -
+
+        #-----------------------  MAIN PANEL ----------------------------
+
+        mainPanel(
+          tabsetPanel(id = "TabsetId",
+              tabPanel(title="Input Ratings",
+                 value = "panel1",
+                 br(),
+                 uiOutput("titInput"),
+                 uiOutput("custcateg2RC"),
+                 textInput(inputId="ti.clabels2RC",label=NULL,
+                           value="",placeholder = "Categ1,Categ2"),
+                 uiOutput("Categories"),
+                 uiOutput("Ratings"),
+                 conditionalPanel(
+                   condition="input.Import2RC==true",
+                   uiOutput("copypaste2RC"),
+                   br(),
+                   rHandsontableOutput("gridFile2RC")
+                 )
+              ),
+              tabPanel(title="Options",
+                 value = "panel2",
+                 wellPanel(
+                   fluidRow(column(width=5,h4("Agreement Coefficients"))),
+                   fluidRow(
+                     column(width=4,checkboxInput("chkkappa2RC", "Cohen's Kappa",value=TRUE)),
+                     column(width=4,checkboxInput("chkac12RC", "Gwet's AC1",value=TRUE)),
+                     column(width=4,checkboxInput("chkpi2RC", "Scott's Pi",value=TRUE))
+                   ),
+                   fluidRow(
+                     column(width=4,checkboxInput("chkalpha2RC", "Krippendorff's Alpha",value=TRUE)),
+                     column(width=4,checkboxInput("chkkbp2RC", "Brennan-Prediger",value=TRUE)),
+                     column(width=4,checkboxInput("chkpct2RC", "Percent Agreement",value=TRUE))
+                   )
+                 ),
+                 tags$hr(style="border-color: purple;"),
+                 fluidRow(
+                   column(width=7,
+                     checkboxInput("chkweighted2RC", "Weighted Analysis Requested?"),
+                     conditionalPanel(
+                       condition="input.chkweighted2RC==true",
+                       radioButtons("optWtype2RC", label=NULL,
+                                    inline=TRUE,width = 1000,
+                                    c('Predefined Weights'="predw",
+                                      'Custom Weights'="cusw")
+                       ),
+                       conditionalPanel(
+                         condition="input.optWtype2RC=='predw'",
+                         selectInput("optweights2RC",
+                                     label = "Select Set of Weights",
+                                     selectize=FALSE,
+                                     multiple=FALSE,
+                                     choices = c('Quadratic Weights'='quaw',
+                                                 'Linear Weights'='linw',
+                                                 'Radical Weights'='radw',
+                                                 'Simple Ordinal Weights'='ordw',
+                                                 'Ratio Weights'='ratw',
+                                                 'Circular Weights'='cirw',
+                                                 'Bipolar Weights'='bipw'
+                                     ),
+                                     width="6cm"
+                         )
+                       )
+                     )
+                   )
+                 ),
+                 tags$hr(style="border-color: purple;"),
+                 wellPanel(
+                   fluidRow(
+                     column(width=5,
+                            radioButtons("optbench", label='Benchmarking Method',
+                                         inline=TRUE,width = 1000,
+                                         c('None'="none",
+                                           'Landis-Koch'="lk",
+                                           'Altman'='altman',
+                                           'Fleiss'='fleiss')
+                            )
+                     )
+                   ),
+                   fluidRow(column(width=6, helpText('Cumulative Probability Threshold'),offset=0)),
+                   fluidRow(
+                     column(width=6,
+                            selectInput("cmbbench",
+                                        label = NULL,
+                                        selectize=FALSE,
+                                        multiple=FALSE,
+                                        choices = sapply(50:99, function(j) {j/100}),
+                                        selected = '0.95',width="2cm"
+                            )
+                     )
+                   )
+                 ),
+                 tags$hr(style="border-color: purple;"),
+                 fluidRow(column(width=4, helpText('Confidence Level (%):'),offset=0),
+                          column(width=4, helpText('Sampling Fraction (%):'),offset=0)
+                 ),
+                 fluidRow(
+                   column(width=4,
+                     selectInput("cmbclev2RC",
+                                 label = NULL,
+                                 selectize=FALSE,
+                                 multiple=FALSE,
+                                 choices = sapply(85:99, function(j) {j}),
+                                 selected = '95',width="2cm"
+                     )
+                   ),
+                   column(width=4,textInput('txtsfrac', label = NULL,value = "0",width='2cm'),offset=0)
+                 )
+              ),
+              tabPanel(title="Custom Weights",
+                 value = "panel4",
+                 br(),
+                 h5("Suply your custom weights here!"),
+                 uiOutput("crowcategs"),
+                 useShinyjs(),
+                 uiOutput("cweights"),
+                 textOutput("text4")
+              ), #tabPanel(title="Custom Weights",
+              tabPanel(title="Output",
+                 value = "panel3",
+                 br(),
+                 uiOutput("titDist2C"), # print the title "DISTRIBUTION OF SUBJECTS BY RATER AND CATEGORY"
+                 br(),
+#                rHandsontableOutput("gridCont2RC"), # contingency table of input ratings
+
+                 tableOutput("gridCont2RC"),
+
+                 uiOutput("hline2C"), # line separating the input ratings and the coefficient estimates
+                 uiOutput("titCoeff"), # print the title "INTER-RATER RELIABILITY COEFFICIENTS & ASSOCIATED PRECISION MEASURES"
+                 uiOutput("titUnWt2C"), # Print out the title: "Unweighted Agreement Coefficients"
+#                 rHandsontableOutput("gridOutCont"), #Output all unweighted coefficients
+                 tableOutput("gridOutCont"),
+
+                 uiOutput("hline.bench2C"),
+                 uiOutput("titBench1U2C"), # Print out benchmarking title - e.g.: "LANDIS-KOCH INTERPRETATION OF UNWEIGHTED AGREEMENT COEFFICIENTS"
+                 uiOutput("titBench2U2C"), # Print out benchmarking subtitle title for unweighted coefficients - e.g. "Benchmarking Unweighted Agreement Coefficients using Cumulative Membership Probabilities"
+                 tableOutput("gridOutBenchU2C"), #Output benchmarking unweighted coefficients
+
+                 uiOutput("hlineWted2C"),
+                 uiOutput("titWted2C"), # Print out the title: "Weighted Agreement Coefficients"
+                 # rHandsontableOutput("gridOutWted2C"),
+                 tableOutput("gridOutWted2C"),
+                 uiOutput("titBench1W2C"), # Print out benchmarking title - e.g.: "LANDIS-KOCH INTERPRETATION OF WEIGHTED AGREEMENT COEFFICIENTS"
+                 uiOutput("titBench2W2C"), # Print out benchmarking subtitle title for weighted coefficients - e.g. "Benchmarking weighted Agreement Coefficients using Cumulative Membership Probabilities"
+                 tableOutput("gridOutBenchW2C"), #Output benchmarking unweighted coefficients
+                 #
+                 br(),
+                 uiOutput("titWtype2C"), # description of the type of weights used
+                 tableOutput("gridOutWeights2C") # matrix of weights
+              ) #tabPanel(title="Output",
+          ) #tabsetPanel(id = "TabsetId",
+        ) # End main panel
+      ) # sidebarLayout(
+    ), #--- End tabPanel("Contingency Table"
+
+    #-----------------------------------------#
+    # -     2 COLUMNS OF RAW DATA             #
+    #       =====================             #
+    #-----------------------------------------#
+    tabPanel("2 Columns of Raw Data",
+       titlePanel("Analyzing 2-Rater Raw Scores"),
+       wellPanel(
+         div(class='row',
+             div(class="col-sm-8",
+                  radioButtons(inputId="optMethod2RR", label="Type of Analysis", inline=FALSE,
+                      c('Chance-corrected Agreement Coefficients (CAC)'="cac",
+                        'Intraclass Correlation Coefficients (ICC)'="icc"),
+                      selected = "cac"
+                  )
+             ),
+             div(class="col-sm-4",
+                br(),
+                checkboxInput(inputId='chkGrp2RR', label='Subgroup Analysis', value=FALSE,width='100%')
+             )
+         )
+       ),
+       sidebarLayout(
+         #-----------------------  SIDEBAR PANEL ----------------------------
+         sidebarPanel(width=4,
+             fluidRow(
+               column(width=6,checkboxInput("Import2RR", "Import data?")),
+               conditionalPanel( # Uploading Files if data to be imported
+                 condition="input.optMethod2RR=='cac'",
+                 column(width=6,actionButton("cmdExecute2RR.CAC", "Execute!",icon("paper-plane"),
+                                             style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),offset = 0)
+               ),
+               conditionalPanel( # Uploading Files if data to be imported
+                 condition="input.optMethod2RR=='icc'",
+                 column(width=6,actionButton("cmdExecute2RR.ICC", "Execute!",icon("paper-plane"),
+                                             style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),offset = 0)
+               )
+             ),
+             fluidRow(
+               conditionalPanel( # specify input file type
+                 condition="input.Import2RR==true",
+                   column(width=10,
+                          radioButtons('ftype2RR', label=NULL,inline=TRUE,
+                                       c("CSV/Text"='csv',
+                                         "Excel" = 'xls')
+                          )
+                   )
+               )#,
+               # column(width=1,uiOutput("Download2RR.CAC"),offset=0),
+               # column(width=1,uiOutput("Download2RR.ICC"),offset=0)
+             ),
+             conditionalPanel( # Uploading Files if data to be imported
+                 condition="input.Import2RR==true",
+                 fileInput('file2RR', 'Choose file to upload',
+                     accept = c(
+                       'text/csv',
+                       'text/comma-separated-values',
+                       'text/tab-separated-values',
+                       'text/plain',
+                       '.csv',
+                       '.tsv',
+                       '.xls',
+                       '.xlsx'
+                     )
+                 ),
+                 conditionalPanel( # Uploading Files if data to be imported
+                   condition="input.ftype2RR=='csv'",
+                     radioButtons('sep2R', 'Separator',inline=TRUE,
+                                  c(Comma=',',Semicolon=';',Tab='\t'),
+                                  ','),
+                     radioButtons('quote2R', 'Quote',inline=TRUE,
+                                  c(None='','Double'='"','Single'="'"),
+                                  '"')
+                 ),
+                 actionButton("reset2RR", "Reset Input File")
+             ) #conditionalPanel( # Uploading Files if data to be imported
+         ), # End of sidebarPanel(
+
+         #----------------------->  MAIN PANEL <----------------------------
+
+         mainPanel(
+            tabsetPanel(id="TabId2RR", type = "tabs",
+               tabPanel("Input Data",
+                  value = "panel1R2R",
+                  br(),
+                  fluidRow(
+                    column(width=4,
+                      conditionalPanel( # Uploading Files if data to be imported
+                          condition="input.chkGrp2RR==true",
+                          fluidRow(column(width=3,actionButton("abConfirm2RGR",width='3cm',label = HTML("Group Data"))),
+                                   column(width=1,checkboxInput('header2RGR', 'Header', TRUE),offset=5)),
+                          uiOutput("vt2RGrp"),
+                          br()
+                      ),
+                      conditionalPanel( # Uploading Files if data to be imported
+                        condition="input.optMethod2RR=='icc'",
+                        fluidRow(column(width=3,actionButton("abConfirm2RTar",width='3cm',label = HTML("Target Data"))),
+                                 column(width=1,checkboxInput('header2RTar', 'Header', TRUE),offset=5)),
+                        uiOutput("vt2RTar"),
+                        br()
+                      ),
+                      fluidRow(column(width=3,actionButton("abConfirm2RR1",width='3cm',label = HTML("Rater 1 Data"))),
+                               column(width=1,checkboxInput('header2RR1', 'Header', TRUE),offset=5)),
+                      uiOutput("vt2RRater1"),
+                      br(),
+                      fluidRow(column(width=3,actionButton("abConfirm2RR2",width='3cm',label = HTML("Rater 2 Data"))),
+                               column(width=1,checkboxInput('header2RR2', 'Header', TRUE),offset=5)),
+                      uiOutput("vt2RRater2")
+                    ),
+                    column(width=4,
+                         rHandsontableOutput("grid2RRaw"),offset=1
+                    )
+                  ) # fluidRow(
+               ),
+               tabPanel("Options (CAC)", # Options for CAC analysis (2-raters/raw ratings) #######################
+                  value = "panel2R2R",
+                  wellPanel(
+                    fluidRow(column(width=5,h4("Agreement Coefficients"))),
+                    fluidRow(
+                      column(width=4,checkboxInput("chkkappa2RR", "Cohen's Kappa",value=TRUE)),
+                      column(width=4,checkboxInput("chkac12RR", "Gwet's AC1",value=TRUE)),
+                      column(width=4,checkboxInput("chkpi2RR", "Scott's Pi",value=TRUE))
+                    ),
+                    fluidRow(
+                      column(width=4,checkboxInput("chkalpha2RR", "Krippendorff's Alpha",value=TRUE)),
+                      column(width=4,checkboxInput("chkkbp2RR", "Brennan-Prediger",value=TRUE)),
+                      column(width=4,checkboxInput("chkpct2RR", "Percent Agreement",value=TRUE))
+                    )
+                  ),
+                  tags$hr(style="border-color: purple;"),
+                  fluidRow(
+                    column(width=7,
+                           checkboxInput("chkweighted2RR", "Weighted Analysis Requested?"),
+                           conditionalPanel(
+                             condition="input.chkweighted2RR==true",
+                             radioButtons("optWtype2RR", label=NULL,
+                                          inline=TRUE,width = 1000,
+                                          c('Predefined Weights'="predw",
+                                            'Custom Weights'="cusw")
+                             ),
+                             conditionalPanel(
+                               condition="input.optWtype2RR=='predw'",
+                               selectInput("optweights2RR",
+                                           label = "Select Set of Weights",
+                                           selectize=FALSE,
+                                           multiple=FALSE,
+                                           choices = c('Quadratic Weights'='quaw',
+                                                       'Linear Weights'='linw',
+                                                       'Radical Weights'='radw',
+                                                       'Simple Ordinal Weights'='ordw',
+                                                       'Ratio Weights'='ratw',
+                                                       'Circular Weights'='cirw',
+                                                       'Bipolar Weights'='bipw'
+                                           ),
+                                           width="6cm"
+                               )
+                             )
+                           )
+                    )
+                  ),
+                  tags$hr(style="border-color: purple;"),
+                  wellPanel(
+                    fluidRow(
+                      column(width=5,
+                             radioButtons("optbench2RR", label='Benchmarking Method',
+                                          inline=TRUE,width = 1000,
+                                          c('None'="none",
+                                            'Landis-Koch'="lk",
+                                            'Altman'='altman',
+                                            'Fleiss'='fleiss')
+                             )
+                      )
+                    ),
+                    fluidRow(column(width=6, helpText('Cumulative Probability Threshold'),offset=0)),
+                    fluidRow(
+                      column(width=6,
+                             selectInput("cmbbench2RR",
+                                         label = NULL,
+                                         selectize=FALSE,
+                                         multiple=FALSE,
+                                         choices = sapply(50:99, function(j) {j/100}),
+                                         selected = '0.95',width="2cm"
+                             )
+                      )
+                    )
+                  ),
+                  tags$hr(style="border-color: purple;"),
+                  fluidRow(column(width=4, helpText('Confidence Level (%):'),offset=0),
+                           column(width=4, helpText('Sampling Fraction (%):'),offset=0)
+                  ),
+                  fluidRow(
+                    column(width=4,
+                           selectInput("cmbclev2RR",
+                                       label = NULL,
+                                       selectize=FALSE,
+                                       multiple=FALSE,
+                                       choices = sapply(85:99, function(j) {j}),
+                                       selected = '95',width="2cm"
+                           )
+                    ),
+                    column(width=4,textInput('txtsfrac2RR', label = NULL,value = "0",width='2cm'),offset=0)
+                  )
+               ),
+               tabPanel("Options (ICC)", # Options for ICC analysis #############
+                  value = "panel3R2R",
+                  wellPanel(
+                    fluidRow(
+                      column(width=8,
+                        radioButtons(inputId="optIccModel2R", label="Inter-/Intra-Reliability Model", inline=FALSE,
+                           choices=c('Each target rated by a different group of raters'="model1A",
+                                     'Each rater rates a different group of targets'="model1B",
+                                     'Each rater rates all targets'="model2or3")
+                        )
+                      )
+                    ),
+                    conditionalPanel(
+                      condition="input.optIccModel2R == 'model2or3'",
+                      fluidRow(
+                        column(width=1),
+                        column(width=6,
+                           radioButtons(inputId="optICC2R.2Way", label=HTML("<i><font color='gray'>Specify the nature of the rater effect</font></i>"), inline=FALSE,
+                                        choices=c('Raters from a larger population'="model2",
+                                                  'Raters are the only ones of interest'="model3")
+                           )
+                        ),
+                        column(width=5,
+                            fluidRow(column(width=1,helpText(" "))),
+                            fluidRow(checkboxInput("chkInteraction2RR", "Rater/Target Interaction?",value=TRUE))
+                        )
+                      )
+                    ),
+                    fluidRow( #Printing the ANOVA model description
+                      uiOutput("titANOVA2RR")
+                    )
+                  ),
+                  fluidRow(
+                    column(width=4,h5(HTML("Confidence Level (%): "))),
+                    column(width=2,
+                        selectInput(inputId="si.CI2R.icc",label=NULL,
+                                    selected = '95',selectize = FALSE,
+                                    multiple = FALSE,
+                                    width = "2cm",
+                                    choices = c('99','95','90','85','80')
+                        ),
+                        offset=0
+                    )
+                  ),
+                  br(),
+                  wellPanel(
+                    #div(class='row',
+                    fluidRow(
+                      column(width=8,h5(HTML("<b>Type of Intraclass Correlation Coefficient</b>")))
+                    ),
+                    conditionalPanel(
+                      condition="input.optIccModel2R=='model1A'",
+                      fluidRow(
+                        column(width=6,checkboxInput("chkTypeICC2R1Ar", "Inter-Rater Reliability Coefficient",value=TRUE)),
+                        column(width=6,checkboxInput("chkTypeICC2R1Aa", "Intra-Rater Reliability Coefficient",value=FALSE))
+                      )
+                    ),
+                    conditionalPanel(
+                      condition="input.optIccModel2R=='model1B'",
+                      fluidRow(
+                        column(width=6,checkboxInput("chkTypeICC2R1Br", "Inter-Rater Reliability Coefficient",value=FALSE)),
+                        column(width=6,checkboxInput("chkTypeICC2R1Ba", "Intra-Rater Reliability Coefficient",value=TRUE))
+                      )
+                    ),
+                    conditionalPanel(
+                      condition="input.optIccModel2R=='model2or3'",
+                      fluidRow(
+                        column(width=6,checkboxInput("chkTypeICC2R2r", "Inter-Rater Reliability Coefficient",value=TRUE)),
+                        column(width=6,checkboxInput("chkTypeICC2R2a", "Intra-Rater Reliability Coefficient",value=TRUE))
+                      )
+                    )
+                  ) #wellPanel(
+               ),
+               tabPanel("Output",  # --- OUTPUT FOR THE CAC ANALYSIS ------
+                  value = "panel5R2R",
+                  br(),
+                  uiOutput("Download2RR.CAC"),
+                  uiOutput("titDist2R"), # print the title "DISTRIBUTION OF SUBJECTS BY RATER AND CATEGORY"
+                  br(),
+                  uiOutput("ui.dist2RR"),
+                  uiOutput("hline2R"), # line separating the input ratings and the coefficient estimates
+                  uiOutput("titCoeff2R"), # print the title "INTER-RATER RELIABILITY COEFFICIENTS & ASSOCIATED PRECISION MEASURES"
+                  uiOutput("titUnWt2R"), # Print out the title: "Unweighted Agreement Coefficients"
+                  br(),
+                  uiOutput("ui.Unweigted2RR"), #ui object to receive the table(s) of unweighted coefficients - one table per analytic group if any -
+                  #tableOutput("gridOut2RR"),
+
+                  uiOutput("hline.bench2R"),
+                  uiOutput("titBench1U2R"), # Print out benchmarking title - e.g.: "LANDIS-KOCH INTERPRETATION OF UNWEIGHTED AGREEMENT COEFFICIENTS"
+                  uiOutput("titBench2U2R"), # Print out benchmarking subtitle title for unweighted coefficients - e.g. "Benchmarking Unweighted Agreement Coefficients using Cumulative Membership Probabilities"
+                  br(),
+                  uiOutput("ui.UnweigtBench2RR"),
+                  #tableOutput("gridOutBenchU2R"), #Output benchmarking unweighted coefficients
+
+                  uiOutput("hlineWted2R"),
+                  uiOutput("titWted2R"), # Print out the title: "Weighted Agreement Coefficients"
+                  br(),
+                  uiOutput("ui.Weigted2RR"),
+                  #tableOutput("gridOutWted2R"),
+                  uiOutput("titBench1W2R"), # Print out benchmarking title - e.g.: "LANDIS-KOCH INTERPRETATION OF WEIGHTED AGREEMENT COEFFICIENTS"
+                  uiOutput("titBench2W2R"), # Print out benchmarking subtitle title for weighted coefficients - e.g. "Benchmarking weighted Agreement Coefficients using Cumulative Membership Probabilities"
+                  br(),
+                  uiOutput("ui.WeigtedBench2RR"),
+                  #tableOutput("gridOutBenchW2R"), #Output benchmarking unweighted coefficients
+                  #
+                  br(),
+                  uiOutput("titWtype2R"), # description of the type of weights used
+                  tableOutput("gridOutWeights2R") # matrix of weights
+               ),
+               tabPanel(title="Output", # --- OUTPUT FOR THE ICC ANALYSIS ------
+                        value = "panel6R2R",
+                        br(),
+                        uiOutput("Download2RR.ICC"),
+                        uiOutput("titMain2RR.icc"), # print the main title "Intraclass Correlation Coefficients - ICC "
+                        uiOutput("titModel2RR.icc"),# print model type: e.g.: "Model-ICC(3,1) ANOVA:2-Way Mixed ANOVA Model With Interaction... "
+                        uiOutput("hline1.2RR.icc"),
+                        uiOutput("titRaters2RR.icc"),# print list of participating raters
+                        br(),
+                        uiOutput("tit.descrip2RR.icc"),# print title "Descriptive statistics
+                        tableOutput("gridOut2RR.descrip.icc"),  # descriptive statistics table
+
+                        uiOutput("tit.varcomp2RR.icc"),# print title "Variance Components
+                        tableOutput("gridOut2RR.varcomp.icc"),  # Table of variance components
+
+                        uiOutput("tit.inter2RR.icc"),# print title "INTER-RATER RELIABILITY
+                        tableOutput("gridOut2RR.inter.icc"),  # inter-rater reliability statistics table
+                        uiOutput("tit2RR.pval.inter.icc"),# print title "P-value for various ICC values/intrer-rater
+                        tableOutput("gridOut2RR.pval.inter.icc"),  # p-values for inter-rater reliability statistics
+                        uiOutput("tit.intra2RR.icc"),# print title "INTRA-RATER RELIABILITY
+                        tableOutput("gridOut2RR.intra.icc"),  # intra-rater reliability statistics table
+                        uiOutput("tit2RR.pval.intra.icc"),# print title "P-value for various ICC values/intrer-rater
+                        tableOutput("gridOut2RR.pval.intra.icc")  # p-values for intra-rater reliability statistics
+               ),
+               tabPanel("Custom Weights",
+                        value = "panel4R2R",
+                        br(),
+                        h5("Suply your custom weights here!"),
+                        uiOutput("crowcat2RR"),
+                        useShinyjs(),
+                        uiOutput("cwts2RR")
+               ) #tabPanel(title="Custom Weights"
+            ) #tabsetPanel(type = "tabs",
+         ) # End main panel for (for 2 columns of raw data)
+       ) # End of sidebarLayout (for 2 columns of raw data)
+    ) # End of tabPanel("2 Columns of Raw Data"
+  ), # ---> End : navbarMenu("2 Raters",
+  navbarMenu("3 Raters",
+    #-----------------------------------------#
+    # -     3 COLUMNS OF RAW DATA             #
+    #       =====================             #
+    #-----------------------------------------#
+     tabPanel("Columns of Raw Scores",
+        titlePanel("Analyzing Raw Scores for 3 Raters or More"),
+        wellPanel(
+          div(class='row',
+              div(class="col-sm-8",
+                  radioButtons(inputId="optMethod3RR", label="Type of Analysis", inline=FALSE,
+                     c('Chance-corrected Agreement Coefficients (CAC)'="cac",
+                       'Intraclass Correlation Coefficients (ICC)'="icc"),
+                     selected = "cac"
+                  )
+              ),
+              div(class="col-sm-3",
+                br(),
+                checkboxInput(inputId='chkGrp3RR', label='Subgroup Analysis', value=FALSE,width='100%')
+              )
+          )
+        ),
+        sidebarLayout(
+          #-----------------------  SIDEBAR PANEL ----------------------------
+          sidebarPanel(width=4,
+             fluidRow(
+               column(width=6,checkboxInput("Import3RR", "Import data?")),
+               conditionalPanel( # ICC analysis must be requested
+                 condition="input.optMethod3RR=='icc'",
+                 column(width=6,actionButton("cmdExecute3RR.ICC", "Execute!",
+                       icon("paper-plane"),
+                       style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),offset = 0)
+               ),
+               conditionalPanel( # ICC analysis must be requested
+                 condition="input.optMethod3RR=='cac'",
+                 column(width=6,actionButton("cmdExecute3RR.CAC", "Execute!",
+                                             icon("paper-plane"),
+                                             style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),offset = 0)
+               )
+             ),
+             conditionalPanel( # Uploading Files if data to be imported
+               condition="input.Import3RR==true",
+               fluidRow(
+                 column(width=10,
+                        radioButtons('ftype3RR', label=NULL,inline=TRUE,
+                                     c("CVS/Text"='csv',
+                                       "Excel" = 'xls')
+                        )
+                 )
+               )),
+             conditionalPanel( # Uploading Files if data to be imported
+               condition="input.Import3RR==true",
+               fileInput('file3RR', 'Choose file to upload',
+                         accept = c(
+                           'text/csv',
+                           'text/comma-separated-values',
+                           'text/tab-separated-values',
+                           'text/plain',
+                           '.csv',
+                           '.tsv',
+                           '.xls',
+                           '.xlsx'
+                         )
+               ),
+               conditionalPanel( # additional options for csv files
+                 condition="input.ftype3RR=='csv'",
+                   radioButtons('sep3RR', 'Separator',inline=TRUE,
+                                c(Comma=',',Semicolon=';',Tab='\t'),
+                                ','),
+                   radioButtons('quote3RR', 'Quote',inline=TRUE,
+                                c(None='','Double'='"','Single'="'"),
+                                '"')
+               ),
+               actionButton("Reset3RR", "Reset Input File")
+             ) #conditionalPanel( # Uploading Files if data to be imported
+          ), # End of sidebarPanel(
+
+          #-----------------------  MAIN PANEL ----------------------------
+          mainPanel(
+            tabsetPanel(id="TabId3RR", type = "tabs",
+                tabPanel("Input Data",
+                   value = "panel1R3R",
+                   br(),
+                   fluidRow(
+                     column(width=4,
+                        conditionalPanel( # The subgroup analysis must be selected
+                          condition="input.chkGrp3RR==true",
+                          fluidRow(column(width=2,actionButton("abConfirm3RRGR",width='3.5cm',label = HTML("Group Selection"))),
+                                   column(width=1,checkboxInput('header3RRGR', 'Header', TRUE),
+                                          offset=5)),
+                          uiOutput("vt3RGrp"),
+                          br()
+                        ),
+                        conditionalPanel( # ICC analysis must be requested
+                          condition="input.optMethod3RR=='icc'",
+                          fluidRow(column(width=2,actionButton("abConfirm3RRTar",width='3.5cm',label = HTML("Target Selection"))),
+                                   column(width=1,checkboxInput('header3RRTar', 'Header', TRUE),
+                                          offset=5)),
+                          uiOutput("vt3RTar"),
+                          br()
+                        ),
+                        fluidRow(column(width=2,actionButton("abConfirm3RR",width='3.5cm',label = HTML("Input Ratings"))),
+                                 column(width=1,checkboxInput('header3RR', 'Header', TRUE),
+                                        offset=5)
+                                 ),
+                        uiOutput("vt3RRaw")
+                     ),
+                     column(width=4,rHandsontableOutput("grid3RRaw"),offset=0)
+                   ) # fluidRow(
+                ), # end of Input panel
+                tabPanel("Options (CAC)", # Options for CAC analysis (2-raters/raw ratings) #######################
+                   value = "panel2R3R",
+                   wellPanel(
+                     fluidRow(column(width=5,h4("Agreement Coefficients"))),
+                     fluidRow(
+                       column(width=4,checkboxInput("chkkappa3RR", "Conger's Kappa",value=TRUE)),
+                       column(width=4,checkboxInput("chkac13RR", "Gwet's AC1",value=TRUE)),
+                       column(width=4,checkboxInput("chkpi3RR", "Scott's Pi",value=TRUE))
+                     ),
+                     fluidRow(
+                       column(width=4,checkboxInput("chkalpha3RR", "Krippendorff's Alpha",value=TRUE)),
+                       column(width=4,checkboxInput("chkkbp3RR", "Brennan-Prediger",value=TRUE)),
+                       column(width=4,checkboxInput("chkpct3RR", "Percent Agreement",value=TRUE))
+                     )
+                   ),
+                   tags$hr(style="border-color: purple;"),
+                   fluidRow(
+                     column(width=7,
+                        checkboxInput("chkweighted3RR", "Weighted Analysis Requested?"),
+                        conditionalPanel(
+                          condition="input.chkweighted3RR==true",
+                          radioButtons("optWtype3RR", label=NULL,
+                                       inline=TRUE,width = 1000,
+                                       c('Predefined Weights'="predw",
+                                         'Custom Weights'="cusw")
+                          ),
+                          conditionalPanel(
+                            condition="input.optWtype3RR=='predw'",
+                            selectInput("optweights3RR",
+                                        label = "Select Set of Weights",
+                                        selectize=FALSE,
+                                        multiple=FALSE,
+                                        choices = c('Quadratic Weights'='quaw',
+                                                    'Linear Weights'='linw',
+                                                    'Radical Weights'='radw',
+                                                    'Simple Ordinal Weights'='ordw',
+                                                    'Ratio Weights'='ratw',
+                                                    'Circular Weights'='cirw',
+                                                    'Bipolar Weights'='bipw'
+                                        ),
+                                        width="6cm"
+                            )#selectInput("optweights3RR",
+                          ) #conditionalPanel(condition="input.optWtype3RR=='predw'"
+                        )#conditionalPanel(condition="input.chkweighted3RR==true"
+                     )#column(width=7,checkboxInput("chkweighted3RR", "Weighted Analysis Requested?")
+                   ),#fluidRow(
+                   tags$hr(style="border-color: purple;"),
+                   wellPanel(
+                     fluidRow(
+                       column(width=5,
+                          radioButtons("optbench3RR", label='Benchmarking Method',
+                             inline=TRUE,width = 1000,
+                             c('None'="none",
+                               'Landis-Koch'="lk",
+                               'Altman'='altman',
+                               'Fleiss'='fleiss')
+                          )#radioButtons("optbench3RR"
+                       )#column(width=5,
+                     ),
+                     fluidRow(column(width=6, helpText('Cumulative Probability Threshold'),offset=0)),
+                     fluidRow(
+                       column(width=6,
+                          selectInput("cmbbench3RR",
+                            label = NULL,
+                            selectize=FALSE,
+                            multiple=FALSE,
+                            choices = sapply(50:99, function(j) {j/100}),
+                            selected = '0.95',width="2cm"
+                          ) #selectInput("cmbbench3RR",
+                       ) #column(width=6,
+                     ) #fluidRow(
+                   ), #wellPanel(
+                   tags$hr(style="border-color: purple;"),
+                   fluidRow(column(width=4, helpText('Confidence Level (%):'),offset=0),
+                            column(width=4, helpText('Sampling Fraction (%):'),offset=0)
+                   ),
+                   fluidRow(
+                     column(width=4,
+                        selectInput("cmbclev3RR",
+                            label = NULL,
+                            selectize=FALSE,
+                            multiple=FALSE,
+                            choices = sapply(85:99, function(j) {j}),
+                            selected = '95',width="2cm"
+                        )
+                     ),
+                     column(width=4,textInput('txtsfrac3RR', label = NULL,value = "0",width='2cm'),offset=0)
+                   )
+                ), #tabPanel("Options (CAC)",
+                tabPanel("Options (ICC)", # Options for ICC analysis #############
+                   value = "panel3R3R",
+                   wellPanel(
+                     fluidRow(
+                       column(width=8,
+                          radioButtons(inputId="optIccModel3R", label="Inter-/Intra-Rater Reliability Model", inline=FALSE,
+                             choices=c('Each target rated by a different group of raters'="model1A",
+                                       'Each rater rates a different group of targets'="model1B",
+                                       'Each rater rates all targets'="model2or3")
+                          ) #radioButtons(
+                       ) #column(width=8,
+                     ), #fluidRow(
+                     conditionalPanel(
+                       condition="input.optIccModel3R == 'model2or3'",
+                       fluidRow(
+                         column(width=1),
+                         column(width=6,
+                            radioButtons(inputId="optICC3R.2Way", label=HTML("<i><font color='gray'>Specify the nature of the rater effect</font></i>"), inline=FALSE,
+                               choices=c('Raters from a larger population'="model2",
+                                         'Raters are the only ones of interest'="model3")
+                            )#radioButtons(inputId="optICC3R.2Way"
+                         ),
+                         column(width=5,
+                            fluidRow(column(width=1,helpText(" "))),
+                            fluidRow(checkboxInput("chkInteraction3RR", "Rater/Target Interaction?",value=TRUE))
+                         )#column(width=5
+                       )#fluidRow(
+                     ),#conditionalPanel(
+                     fluidRow( #Printing the ANOVA model description
+                       uiOutput("titANOVA3RR")
+                     )
+                   ),
+                   fluidRow(
+                     column(width=4,h5(HTML("Confidence Level (%): "))),
+                     column(width=2,
+                        selectInput(inputId="si.CI3R.icc",label=NULL,
+                            selected = '95',selectize = FALSE,
+                            multiple = FALSE,
+                            width = "2cm",
+                            choices = c('99','95','90','85','80')
+                        ),
+                        offset=0
+                     )
+                   ), #fluidRow(
+                   br(),
+                   wellPanel(
+                     #div(class='row',
+                     fluidRow(
+                       column(width=8,
+                              h5(HTML("<b>Type of Intraclass Correlation Coefficient</b>"))
+                       )
+                     ),
+                     conditionalPanel(
+                       condition="input.optIccModel3R=='model1A'",
+                       fluidRow(
+                          column(width=6,checkboxInput("chkTypeICC3R1Ar", "Inter-Rater Reliability Coefficient",value=TRUE)),
+                          column(width=6,checkboxInput("chkTypeICC3R1Aa", "Intra-Rater Reliability Coefficient",value=FALSE))
+                       )
+                     ),
+                     conditionalPanel(
+                       condition="input.optIccModel3R=='model1B'",
+                       fluidRow(
+                         column(width=6,checkboxInput("chkTypeICC3R1Br", "Inter-Rater Reliability Coefficient",value=FALSE)),
+                         column(width=6,checkboxInput("chkTypeICC3R1Ba", "Intra-Rater Reliability Coefficient",value=TRUE))
+                       )
+                     ),
+                     conditionalPanel(
+                       condition="input.optIccModel3R=='model2or3'",
+                       fluidRow(
+                          column(width=6,checkboxInput("chkTypeICC3R2r", "Inter-Rater Reliability Coefficient",value=TRUE)),
+                          column(width=6,checkboxInput("chkTypeICC3R2a", "Intra-Rater Reliability Coefficient",value=TRUE))
+                       )
+                     )
+                   ) #wellPanel(
+                ), #tabPanel("Options (ICC)",
+                tabPanel("Output", #----- OUTPUT FOR THE CAC ANALYSIS ------
+                   value = "panel5R3R",
+                   br(),
+                   uiOutput("Download3RR.CAC"),
+                   uiOutput("titDist3RR"), # print the title "DISTRIBUTION OF SUBJECTS BY RATER AND CATEGORY"
+                   br(),
+                   uiOutput("ui.dist3RR"),# contingency table of input ratings
+
+                   uiOutput("hline3RR"), # line separating the input ratings and the coefficient estimates
+                   uiOutput("titCoeff3RR"), # print the title "INTER-RATER RELIABILITY COEFFICIENTS & ASSOCIATED PRECISION MEASURES"
+                   uiOutput("titUnWt3RR"), # Print out the title: "Unweighted Agreement Coefficients"
+                   uiOutput("ui.Unweigted3RR"), #Output all unweighted coefficients
+
+                   uiOutput("hline.bench3RR"),
+                   uiOutput("titBench1U3RR"), # Print out benchmarking title - e.g.: "LANDIS-KOCH INTERPRETATION OF UNWEIGHTED AGREEMENT COEFFICIENTS"
+                   uiOutput("titBench2U3RR"), # Print out benchmarking subtitle title for unweighted coefficients - e.g. "Benchmarking Unweighted Agreement Coefficients using Cumulative Membership Probabilities"
+                   uiOutput("ui.UnweigtBench3RR"), #Output benchmarking unweighted coefficients
+
+                   uiOutput("hlineWted3RR"),
+                   uiOutput("titWted3RR"), # Print out the title: "Weighted Agreement Coefficients"
+                   uiOutput("ui.Weigted3RR"),#rHandsontableOutput("gridOutWted3RR"),
+                   uiOutput("titBench1W3RR"), # Print out benchmarking title - e.g.: "LANDIS-KOCH INTERPRETATION OF WEIGHTED AGREEMENT COEFFICIENTS"
+                   uiOutput("titBench2W3RR"), # Print out benchmarking subtitle title for weighted coefficients - e.g. "Benchmarking weighted Agreement Coefficients using Cumulative Membership Probabilities"
+                   uiOutput("ui.WeigtedBench3RR"),#Output benchmarking weighted coefficients
+                   #
+                   br(),
+                   uiOutput("titWtype3RR"), # description of the type of weights used
+                   tableOutput("gridOutWeights3RR")  # matrix of weights
+                ),
+                tabPanel(title="Output", # --- OUTPUT FOR THE ICC ANALYSIS ------
+                         value = "panel6R3R",
+                         br(),
+                         uiOutput("Download3RR.ICC"),
+                         uiOutput("titMain3RR.icc"), # print the main title "Intraclass Correlation Coefficients - ICC "
+                         uiOutput("titModel.icc"),# print model type: e.g.: "Model-ICC(3,1) ANOVA:2-Way Mixed ANOVA Model With Interaction... "
+                         uiOutput("hline1.icc"),
+                         uiOutput("titRaters.icc"),# print list of participating raters
+                         br(),
+                         uiOutput("tit.descrip.icc"),# print title "Descriptive statistics
+                         tableOutput("gridOut.descrip.icc"),  # descriptive statistics table
+
+                         uiOutput("tit.varcomp.icc"),# print title "Variance Components
+                         tableOutput("gridOut.varcomp.icc"),  # Table of variance components
+
+                         uiOutput("tit.inter.icc"),# print title "INTER-RATER RELIABILITY
+                         tableOutput("gridOut.inter.icc"),  # inter-rater reliability statistics table
+                         uiOutput("tit.pval.inter.icc"),# print title "p-Value for various ICC levels"
+                         tableOutput("gridOut3RR.pval.inter.icc"),  # p-values for inter-rater reliability statistics
+                         uiOutput("tit.intra.icc"),# print title "INTRA-RATER RELIABILITY
+                         tableOutput("gridOut.intra.icc"),  # intra-rater reliability statistics table
+                         uiOutput("tit.pval.intra.icc"),# print title "p-Value for various ICC levels"
+                         tableOutput("gridOut3RR.pval.intra.icc")  # p-values for intra-rater reliability statistics
+                ),
+                tabPanel(title="Custom Weights",
+                         value = "panel4R3R",
+                         br(),
+                         h5("Suply your custom weights here!"),
+                         uiOutput("crowcategs3RR"),
+                         useShinyjs(),
+                         uiOutput("cweights3RR")
+                ) #tabPanel(title="Custom Weights"
+            ) # end of tabsetPanel(id="TabId3RR", type = "tabs",
+          ) # End main panel
+        ) # sidebarLayout(
+     ), #tabPanel("Columns of Raw Scores",
+     #---------------------------------------------------------------------#
+     # -     DISTRIBUTION OF 3 RATERS OR MORE BY SUBJECT & CATEGORY        #
+     #       ======================================================        #
+     #---------------------------------------------------------------------#
+     tabPanel("Distribution of Raters",
+        titlePanel("Analyzing the Distribution of Raters by Subject & Category"),
+        wellPanel(
+          div(class='row',
+              div(class="col-sm-8",
+                  radioButtons(inputId="optMethod3RD1", label="Type of Analysis", inline=FALSE,
+                         c('Chance-corrected Agreement Coefficients (CAC)'="cac"),
+                         selected = "cac"
+                  ),
+                  radioButtons(inputId="optMethod3RD2", label=NULL, inline=FALSE,
+                               c("Intraclass Correlation Coefficients (ICC)"),
+                               selected=NULL
+                  )
+              ),
+              div(class="col-sm-4",
+                  br(),
+                  checkboxInput(inputId='chkGrp3RD', label='Subgroup Analysis', value=FALSE,width='100%')
+              )
+          )
+        ),
+        sidebarLayout(
+          #-----------------------  SIDEBAR PANEL ----------------------------
+          sidebarPanel(width=4,
+             fluidRow(
+               column(width=6,checkboxInput("Import3RD", "Import data?")),
+               column(width=6,actionButton("cmdExecute3xD", "Execute!",
+                       icon("paper-plane"),
+                       style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),offset = 0)
+             ),
+             conditionalPanel( # choose between csv and excel files
+               condition="input.Import3RD==true",
+               fluidRow(
+                 column(width=10,
+                        radioButtons('ftype3RD', label=NULL,inline=TRUE,
+                                     c("CVS/Text"='csv',
+                                       "Excel" = 'xls')
+                        )
+                 )
+               )),
+             conditionalPanel( #Uploading Files if data to be imported
+               condition="input.Import3RD==true",
+               fileInput('file3RD', 'Choose file to upload',
+                   accept = c(
+                     'text/csv',
+                     'text/comma-separated-values',
+                     'text/tab-separated-values',
+                     'text/plain',
+                     '.csv',
+                     '.tsv',
+                     '.xls',
+                     '.xlsx'
+                   )
+               ),
+               conditionalPanel( # additional options for csv files
+                 condition="input.ftype3RD=='csv'",
+                   radioButtons('sep3RD', 'Separator',inline=TRUE,
+                                c(Comma=',',Semicolon=';',Tab='\t'),
+                                ','),
+                   radioButtons('quote3RD', 'Quote',inline=TRUE,
+                                c(None='','Double'='"','Single'="'"),
+                                '"')
+               ),
+               actionButton("Reset3RD", "Reset Input File")
+             ) #conditionalPanel( # Uploading Files if data to be imported
+          ), # End of sidebarPanel(
+          #-----------------------  MAIN PANEL ----------------------------
+          mainPanel(
+            tabsetPanel(id="TabId3RD", type = "tabs",
+                tabPanel("Input Data",
+                   value = "panel1R3D",
+                   br(),
+                   fluidRow(
+                     column(width=4,
+                        conditionalPanel( # Uploading Files if data to be imported
+                          condition="input.chkGrp3RD==true",
+                          fluidRow(column(width=3,actionButton("abConfirm3RDGR",width='3.5cm',label = HTML("Confirm Selection<br>of Group Data"))),
+                                   column(width=1,checkboxInput('header3RDGR', 'Header', TRUE),offset=5)),
+                          uiOutput("vt3RDGrp"),
+                          br()
+                        ),
+                        fluidRow(column(width=3,actionButton("abConfirm3RD",width='3.5cm',label = HTML("Confirm Selection<br>of Input Ratings"))),
+                                 column(width=1,checkboxInput('header3RD', 'Header', TRUE),
+                                        offset=5)),
+                        uiOutput("vt3RDist")
+                     ),
+                     column(width=4,rHandsontableOutput("grid3RDist"),offset=1)
+                   ) # fluidRow(
+                ), # end of Input panel
+                tabPanel("Options (CAC)", # Options for CAC analysis (2-raters/raw ratings) #######################
+                   value = "panel2R3D",
+                   wellPanel(
+                     fluidRow(column(width=5,h4("Agreement Coefficients"))),
+                     fluidRow(
+                       column(width=4,checkboxInput("chkkappa3RD", "Conger's Kappa",value=FALSE)),
+                       column(width=4,checkboxInput("chkac13RD", "Gwet's AC1",value=TRUE)),
+                       column(width=4,checkboxInput("chkpi3RD", "Scott's Pi",value=TRUE))
+                     ),
+                     fluidRow(
+                       column(width=4,checkboxInput("chkalpha3RD", "Krippendorff's Alpha",value=TRUE)),
+                       column(width=4,checkboxInput("chkkbp3RD", "Brennan-Prediger",value=TRUE)),
+                       column(width=4,checkboxInput("chkpct3RD", "Percent Agreement",value=TRUE))
+                     )
+                   ),
+                   tags$hr(style="border-color: purple;"),
+                   fluidRow(
+                     column(width=7,
+                            checkboxInput("chkweighted3RD", "Weighted Analysis Requested?"),
+                            conditionalPanel(
+                              condition="input.chkweighted3RD==true",
+                              radioButtons("optWtype3RD", label=NULL,
+                                           inline=TRUE,width = 1000,
+                                           c('Predefined Weights'="predw",
+                                             'Custom Weights'="cusw")
+                              ),
+                              conditionalPanel(
+                                condition="input.optWtype3RD=='predw'",
+                                selectInput("optweights3RD",
+                                    label = "Select Set of Weights",
+                                    selectize=FALSE,
+                                    multiple=FALSE,
+                                    choices = c('Quadratic Weights'='quaw',
+                                                'Linear Weights'='linw',
+                                                'Radical Weights'='radw',
+                                                'Simple Ordinal Weights'='ordw',
+                                                'Ratio Weights'='ratw',
+                                                'Circular Weights'='cirw',
+                                                'Bipolar Weights'='bipw'
+                                    ),
+                                    width="6cm"
+                                )#selectInput("optweights3RD",
+                              ) #conditionalPanel(condition="input.optWtype3RD=='predw'"
+                            )#conditionalPanel(condition="input.chkweighted3RD==true"
+                     )#column(width=7,checkboxInput("chkweighted3RD", "Weighted Analysis Requested?")
+                   ),#fluidRow(
+                   tags$hr(style="border-color: purple;"),
+                   wellPanel(
+                     fluidRow(
+                       column(width=5,
+                              radioButtons("optbench3RD", label='Benchmarking Method',
+                                           inline=TRUE,width = 1000,
+                                           c('None'="none",
+                                             'Landis-Koch'="lk",
+                                             'Altman'='altman',
+                                             'Fleiss'='fleiss')
+                              )#radioButtons("optbench3RD"
+                       )#column(width=5,
+                     ),
+                     fluidRow(column(width=6, helpText('Cumulative Probability Threshold'),offset=0)),
+                     fluidRow(
+                       column(width=6,
+                              selectInput("cmbbench3RD",
+                                  label = NULL,
+                                  selectize=FALSE,
+                                  multiple=FALSE,
+                                  choices = sapply(50:99, function(j) {j/100}),
+                                  selected = '0.95',width="2cm"
+                              ) #selectInput("cmbbench3RD",
+                       ) #column(width=6,
+                     ) #fluidRow(
+                   ), #wellPanel(
+                   tags$hr(style="border-color: purple;"),
+                   fluidRow(column(width=4, helpText('Confidence Level (%):'),offset=0),
+                            column(width=4, helpText('Sampling Fraction (%):'),offset=0)
+                   ),
+                   fluidRow(
+                     column(width=4,
+                            selectInput("cmbclev3RD",
+                                        label = NULL,
+                                        selectize=FALSE,
+                                        multiple=FALSE,
+                                        choices = sapply(85:99, function(j) {j}),
+                                        selected = '95',width="2cm"
+                            )
+                     ),
+                     column(width=4,textInput('txtsfrac3RD', label = NULL,value = "0",width='2cm'),offset=0)
+                   )
+                ), #tabPanel("Options (CAC)",
+                tabPanel("Output",
+                         value = "panel3R3RD",
+                         br(),
+                         uiOutput("Download3RD.CAC"),
+                         uiOutput("titDist3RD"), # print the title "DISTRIBUTION OF SUBJECTS BY RATER AND CATEGORY"
+                         br(),
+                         uiOutput("ui.dist3RD"), # Statistics by subject, rater and category
+
+                         uiOutput("hline3RD"), # line separating the input ratings and the coefficient estimates
+                         uiOutput("titCoeff3RD"), # print the title "INTER-RATER RELIABILITY COEFFICIENTS & ASSOCIATED PRECISION MEASURES"
+                         uiOutput("titUnWt3RD"), # Print out the title: "Unweighted Agreement Coefficients"
+                         uiOutput("ui.Unweigted3RD"), #Output all unweighted coefficients
+
+                         uiOutput("hline.bench3RD"),
+                         uiOutput("titBench1U3RD"), # Print out benchmarking title - e.g.: "LANDIS-KOCH INTERPRETATION OF UNWEIGHTED AGREEMENT COEFFICIENTS"
+                         uiOutput("titBench2U3RD"), # Print out benchmarking subtitle title for unweighted coefficients - e.g. "Benchmarking Unweighted Agreement Coefficients using Cumulative Membership Probabilities"
+                         uiOutput("ui.UnweigtBench3RD"), #Output benchmarking unweighted coefficients
+
+                         uiOutput("hlineWted3RD"),
+                         uiOutput("titWted3RD"), # Print out the title: "Weighted Agreement Coefficients"
+                         uiOutput("ui.Weigted3RD"),
+                         uiOutput("titBench1W3RD"), # Print out benchmarking title - e.g.: "LANDIS-KOCH INTERPRETATION OF WEIGHTED AGREEMENT COEFFICIENTS"
+                         uiOutput("titBench2W3RD"), # Print out benchmarking subtitle title for weighted coefficients - e.g. "Benchmarking weighted Agreement Coefficients using Cumulative Membership Probabilities"
+                         uiOutput("ui.WeigtedBench3RD"), #Output benchmarking unweighted coefficients
+                         #
+                         br(),
+                         uiOutput("titWtype3RD"), # description of the type of weights used
+                         tableOutput("gridOutWeights3RD") # matrix of weights
+                ),
+                tabPanel(title="Custom Weights",
+                         value = "panel4R3D",
+                         br(),
+                         h5("Suply your custom weights here!"),
+                         uiOutput("crowcategs2RD"),
+                         useShinyjs(),
+                         uiOutput("cweights2RD")
+                ) #tabPanel(title="Custom Weights"
+            ) # end of tabsetPanel(id="TabId3RD", type = "tabs",
+          ) # End main panel
+        ) # sidebarLayout(
+     ) #tabPanel("Distribution of Raters",
+  )
+  # , #navbarMenu - 3 raters
+  # navbarMenu("More ...",
+  #    #------------------------------------#
+  #    # -     GENERAL DATA FORMAT          #
+  #    #       ===================          #
+  #    #------------------------------------#
+  #    tabPanel("General Format",
+  #             titlePanel("Analysis of rating data in general format"),
+  #             dataTableOutput("table3")
+  #    ),
+  #    #-----------------------------------------#
+  #    # -     SAMPLE SIZE CALCULATIONS          #
+  #    #       ========================          #
+  #    #-----------------------------------------#
+  #    tabPanel("Sample Size Calculations",
+  #             titlePanel("Inter-Rater Reliability Power Analysis")#,
+  #             # fluidRow(
+  #             #   column(6,
+  #             #          selectInput("qCateg4",
+  #             #                      label = NULL,
+  #             #                      choices = c(2:12),
+  #             #                      selected = "2",width="2cm"
+  #             #          )
+  #             #   ),
+  #             #   column(3,
+  #             #          selectInput("qCateg5",
+  #             #                      label = NULL,
+  #             #                      choices = c(2:12),
+  #             #                      selected = "2",width="2cm"
+  #             #          )
+  #             #   )
+  #             # ) #fluidRow(
+  #    ) #tabPanel("Sample Size Calculations",
+  # ) # END of navbarMenu("More ...",
+
+
+) # END OF navbarPage("",
+) # END OF fluidPage(
+) # END OF shinyUI(

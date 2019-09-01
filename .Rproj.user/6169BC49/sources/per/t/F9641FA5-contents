@@ -1,1 +1,0 @@
-Sys.setenv(R_GSCMD = "C:\\Program Files\\gs\\gs9.27\\bin\\gswin64c.exe")

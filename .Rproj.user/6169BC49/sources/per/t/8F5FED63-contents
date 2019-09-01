@@ -1,0 +1,26 @@
+library(shiny)
+library(sendmailR)
+
+
+ui <- shinyUI(bootstrapPage(
+  actionButton("sendSignal", "Press 3x to Send"),
+  textOutput("my_button"),
+  textInput("subject", "Subject:", value="")
+))
+
+server <- shinyServer(function(input, output, session) {
+  
+  output$my_button <- renderText(input$sendSignal)
+  
+  ##Send an email after actionButton pressed a few times; use some input from UI
+  observe({
+    if(input$sendSignal == 3)
+      sendmail(from = "<gwet62@gmail.com>",
+               to = "<gwet622@gmail.com>",
+               subject = isolate(input$subject), 
+               msg = mime_part(mtcars),  ##
+               control=list(smtpServer="ASPMX.L.GOOGLE.COM"))
+  })
+})
+
+shinyApp(ui= ui, server = server)
