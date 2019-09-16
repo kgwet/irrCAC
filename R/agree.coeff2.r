@@ -13,12 +13,20 @@
 #subjects by rater, when q is the number of categories.
 #======================================================================================
 #' Kappa coefficient for 2 raters
-#' @param ratings A square table of ratings (assume no missing ratings).
+#' @param ratings A square or contingency table of ratings (assume no missing ratings). See the 2 datasets 
+#' "cont3x3abstractors" and "cont4x4diagnosis" that come with this package as examples.
 #' @param weights An optional matrix that contains the weights used in the weighted analysis.
 #' @param conflev An optional confidence level for confidence intervals. The default value is the traditional 0.95.
 #' @param N An optional population size.  The default value is infinity.
 #' @importFrom stats pt qt
 #' @return A data frame containing the following 5 variables: coeff.name coeff.val coeff.se coeff.ci coeff.pval.
+#' @examples 
+#' #The dataset "cont3x3abstractors" comes with this package. Analyze it as follows:
+#' kappa2.table(cont3x3abstractors) #Yields Cohen's kappa along with precision measures
+#' kappa <- kappa2.table(cont3x3abstractors)$coeff.val #Yields Cohen's kappa alone.
+#' kappa
+#' q <- nrow(cont3x3abstractors) #Number of categories
+#' kappa2.table(cont3x3abstractors,weights = quadratic.weights(1:q))#weighted kappa/quadratic wts
 #' @export
 kappa2.table <- function(ratings,weights = identity.weights(1:ncol(ratings)),conflev=0.95,N=Inf){
   ratings <- as.matrix(ratings)
@@ -76,6 +84,13 @@ kappa2.table <- function(ratings,weights = identity.weights(1:ncol(ratings)),con
 #' @param conflev An optional parameter that specifies the confidence level used for constructing confidence intervals. By default the function assumes the standard value of 95\%.
 #' @param N An optional parameter representing the finite population size if any. It is used to perform the finite population correction to the standard error. It's default value is infinity. 
 #' @return A data frame containing the following 5 variables: coeff.name coeff.val coeff.se coeff.ci coeff.pval.
+#' @examples 
+#' #The dataset "cont3x3abstractors" comes with this package. Analyze it as follows:
+#' scott2.table(cont3x3abstractors) #Yields Scott's Pi coefficient along with precision measures
+#' scott <- scott2.table(cont3x3abstractors)$coeff.val #Yields Scott's coefficient alone.
+#' scott
+#' q <- nrow(cont3x3abstractors) #Number of categories
+#' scott2.table(cont3x3abstractors,weights = quadratic.weights(1:q)) #weighted Scott's coefficient
 #' @export
 scott2.table <- function(ratings,weights=identity.weights(1:ncol(ratings)),conflev=0.95,N=Inf){
   ratings <- as.matrix(ratings)
@@ -139,6 +154,13 @@ scott2.table <- function(ratings,weights=identity.weights(1:ncol(ratings)),confl
 #' @param N An optional parameter representing the finite population size if any. It is used to perform the finite
 #' population correction to the standard error. It's default value is infinity.
 #' @return A data frame containing the following 5 variables: coeff.name coeff.val coeff.se coeff.ci coeff.pval.
+#' @examples 
+#' #The dataset "cont3x3abstractors" comes with this package. Analyze it as follows:
+#' gwet.ac1.table(cont3x3abstractors) #Yields AC1 along with precision measures
+#' ac1 <- gwet.ac1.table(cont3x3abstractors)$coeff.val #Yields AC1 coefficient alone.
+#' ac1
+#' q <- nrow(cont3x3abstractors) #Number of categories
+#' gwet.ac1.table(cont3x3abstractors,weights = quadratic.weights(1:q)) #AC2 with quadratic weights
 #' @export
 gwet.ac1.table <- function(ratings,weights=identity.weights(1:ncol(ratings)),conflev=0.95,N=Inf){
   ratings <- as.matrix(ratings)
@@ -199,6 +221,13 @@ gwet.ac1.table <- function(ratings,weights=identity.weights(1:ncol(ratings)),con
 #' intervals. By default the function assumes the standard value of 95\%.
 #' @param N An optional parameter representing the finite population size if any. It is used to perform the finite
 #' population correction to the standard error. It's default value is infinity.
+#' @examples 
+#' #The dataset "cont3x3abstractors" comes with this package. Analyze it as follows:
+#' bp2.table(cont3x3abstractors) #Yields Brennan-Prediger's coefficient along with precision measures
+#' bp <- bp2.table(cont3x3abstractors)$coeff.val #Yields Brennan-Prediger coefficient alone.
+#' bp
+#' q <- nrow(cont3x3abstractors) #Number of categories
+#' bp2.table(cont3x3abstractors,weights = quadratic.weights(1:q)) #Weighted BP coefficient
 #' @return A data frame containing the following 5 variables: coeff.name coeff.val coeff.se coeff.ci coeff.pval.
 #' @export
 bp2.table <- function(ratings,weights=identity.weights(1:ncol(ratings)),conflev=0.95,N=Inf){
@@ -258,6 +287,13 @@ bp2.table <- function(ratings,weights=identity.weights(1:ncol(ratings)),conflev=
 #' @param N An optional parameter representing the finite population size if any. It is used to perform the finite
 #' population correction to the standard error. It's default value is infinity.
 #' @return A data frame containing the following 5 variables: coeff.name coeff.val coeff.se coeff.ci coeff.pval.
+#' @examples 
+#' #The dataset "cont3x3abstractors" comes with this package. Analyze it as follows:
+#' krippen2.table(cont3x3abstractors) #Krippendorff's alpha along with precision measures
+#' alpha <- krippen2.table(cont3x3abstractors)$coeff.val #Krippendorff's alpha alone.
+#' alpha
+#' q <- nrow(cont3x3abstractors) #Number of categories
+#' krippen2.table(cont3x3abstractors,weights = quadratic.weights(1:q)) #Weighted alpha coefficient
 #' @export
 krippen2.table <- function(ratings,weights=identity.weights(1:ncol(ratings)),conflev=0.95,N=Inf){
   ratings <- as.matrix(ratings)
@@ -323,6 +359,13 @@ krippen2.table <- function(ratings,weights=identity.weights(1:ncol(ratings)),con
 #' @param N An optional parameter representing the finite population size if any. It is used to perform the finite
 #' population correction to the standard error. It's default value is infinity.
 #' @return A data frame containing the following 5 variables: coeff.name coeff.val coeff.se coeff.ci coeff.pval.
+#' @examples 
+#' #The dataset "cont3x3abstractors" comes with this package. Analyze it as follows:
+#' pa2.table(cont3x3abstractors) #Yields percent agreement along with precision measures
+#' pa <- pa2.table(cont3x3abstractors)$coeff.val #Yields percent agreement alone.
+#' pa
+#' q <- nrow(cont3x3abstractors) #Number of categories
+#' pa2.table(cont3x3abstractors,weights = quadratic.weights(1:q)) #Weighted percent agreement
 #' @export
 pa2.table <- function(ratings,weights=identity.weights(1:ncol(ratings)),conflev=0.95,N=Inf){
   ratings <- as.matrix(ratings)

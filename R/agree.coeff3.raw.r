@@ -42,6 +42,14 @@
 #' following variables "coeff.name" (coefficient name), "pa" (the percent agreement), "pe" (percent chance-agreement-always equals 0),
 #' "coeff.val" (agreement coefficient = pa), coeff.se (the percent agreement standard error), "conf.int" (the percent agreement confidence interval),
 #' "p.value"(the percent agreement p-value), "w.name"(the weights' identification). 
+#' @examples 
+#' #The dataset "cac.raw4raters" comes with this package. Analyze it as follows:
+#' cac.raw4raters
+#' pa.coeff.raw(cac.raw4raters) #Percent agreement, precision measures, weights & categories
+#' pa.coeff.raw(cac.raw4raters)$est #Yields percent agreement with precision measures
+#' pa <- pa.coeff.raw(cac.raw4raters)$est$coeff.val #Yields percent agreement alone.
+#' pa
+#' pa.coeff.raw(cac.raw4raters, weights = "quadratic") #weighted percent agreement/quadratic weights
 #' @export
 pa.coeff.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conflev=0.95,N=Inf){ 
   pa<-NA;pe<-NA;coeff.val<-NA;coeff.se<-NA;conf.int<-NA;p.value<-NA;w.name<-NA;weights.mat<-NA
@@ -150,6 +158,14 @@ pa.coeff.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conflev=
 #' (coefficient name), "pa" (the percent agreement), "pe" (the percent chance agreement), coeff.val (the agreement coefficient 
 #' estimate-AC1 or AC2), "coeff.se" (the standard error), "conf.int" (AC1/AC2 confidence interval), "p.value"
 #' (Gwet AC1/AC2 p-value), "w.name"(the weights' identification). 
+#' @examples 
+#' #The dataset "cac.raw4raters" comes with this package. Analyze it as follows:
+#' cac.raw4raters
+#' gwet.ac1.raw(cac.raw4raters) #AC1 coefficient, precision measures, weights & categories
+#' gwet.ac1.raw(cac.raw4raters)$est #Yields AC1 coefficient with precision measures
+#' ac1 <- gwet.ac1.raw(cac.raw4raters)$est$coeff.val #Yields AC1 coefficient alone.
+#' ac1
+#' gwet.ac1.raw(cac.raw4raters, weights = "quadratic") #AC2 coefficient with quadratic wts
 #' @references Gwet, K. L. (2008). ``Computing inter-rater reliability and its variance in the presence of high
 #' agreement." \emph{British Journal of Mathematical and Statistical Psychology}, 61, 29-48.
 #' @export
@@ -269,6 +285,14 @@ gwet.ac1.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conflev=
 #' (coefficient name-here it will be "Fleiss' Kappa"), "pa" (the percent agreement), "pe" (the percent chance agreement), coeff.val 
 #' (the agreement coefficient estimate-Fleiss' Kappa), "coeff.se" (the standard error), "conf.int" (Fleiss Kappa's confidence 
 #' interval), "p.value"(Fleiss Kappa's p-value), "w.name"(the weights' identification).
+#' @examples 
+#' #The dataset "cac.raw4raters" comes with this package. Analyze it as follows:
+#' cac.raw4raters
+#' fleiss.kappa.raw(cac.raw4raters) #Fleiss' kappa, precision measures, weights & categories
+#' fleiss.kappa.raw(cac.raw4raters)$est #Yields Fleiss' kappa with precision measures
+#' fleiss <- fleiss.kappa.raw(cac.raw4raters)$est$coeff.val #Yields Fleiss' kappa alone.
+#' fleiss
+#' fleiss.kappa.raw(cac.raw4raters, weights = "quadratic") #weighted Fleiss' kappa/quadratic wts
 #' @references Fleiss, J. L. (1981). \emph{Statistical Methods for Rates and Proportions}. John Wiley \& Sons.
 #' @export
 fleiss.kappa.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conflev=0.95,N=Inf){ 
@@ -395,6 +419,14 @@ fleiss.kappa.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conf
 #' name), "pa" (the percent agreement), "pe" (the percent chance agreement), coeff.val (Krippendorff's alpha estimate), "coeff.se 
 #' (standard error), conf.int" (Krippendorff alpha's confidence interval),"p.value" (Krippendorff alpha's p-value), "w.name" 
 #' (the weights' identification).
+#' @examples 
+#' #The dataset "cac.raw4raters" comes with this package. Analyze it as follows:
+#' cac.raw4raters
+#' krippen.alpha.raw(cac.raw4raters) #Alpha coeff. , precision measures, weights & categories
+#' krippen.alpha.raw(cac.raw4raters)$est #Krippendorff's alpha with precision measures
+#' alpha <- krippen.alpha.raw(cac.raw4raters)$est$coeff.val #Krippendorff's alpha alone.
+#' alpha
+#' krippen.alpha.raw(cac.raw4raters, weights = "quadratic") #weighted alpha/ quadratic wts
 #' @references Gwet, K. (2014). \emph{Handbook of Inter-Rater Reliability: The Definitive Guide to Measuring the Extent of Agreement Among Multiple Raters}, 4th Edition.  Advanced Analytics, LLC.\cr\cr
 #' Krippendorff (1970). ``Bivariate agreement coefficients for reliability of data." \emph{Sociological Methodology},2,139-150.\cr\cr
 #' Krippendorff (1980). \emph{Content analysis: An introduction to its methodology} (2nd ed.), New-bury Park, CA: Sage.
@@ -522,6 +554,14 @@ krippen.alpha.raw <- function(ratings,weights="unweighted",categ.labels=NULL,con
 #' contains the following variables: "coeff.name" (coefficient name), "pa" (the percent agreement), "pe" (the percent chance 
 #' agreement), coeff.val (Conger's Kappa estimate), "coeff.se" (standard error), "conf.int" (Conger Kappa's confidence 
 #' interval), "p.value"(agreement coefficient's p-value), "w.name"(the weights' identification).
+#' @examples 
+#' #The dataset "cac.raw4raters" comes with this package. Analyze it as follows:
+#' cac.raw4raters
+#' conger.kappa.raw(cac.raw4raters) #Conger's kappa, precision stats, weights & categories
+#' conger.kappa.raw(cac.raw4raters)$est #Conger's kappa with precision measures
+#' conger <- conger.kappa.raw(cac.raw4raters)$est$coeff.val #Yields Conger's kappa alone.
+#' conger
+#' conger.kappa.raw(cac.raw4raters, weights = "quadratic") #weighted Conger's kappa
 #' @references Conger, A. J. (1980), ``Integration and Generalization of Kappas for Multiple Raters," \emph{Psychological Bulletin}, 88, 322-328.
 #' @export
 conger.kappa.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conflev=0.95,N=Inf){ 
@@ -647,7 +687,7 @@ conger.kappa.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conf
 #Brennan, R.L., and Prediger, D. J. (1981). ``Coefficient Kappa: some uses, misuses, and alternatives."
 #           Educational and Psychological Measurement, 41, 687-699.
 #======================================================================================
-#' Brennan \& Prediger's agreement coefficient for an arbitrary number of raters (2, 3, +) when the input data represent the raw ratings reported for each subject and each rater.
+#' Brennan \& Prediger's (BP) agreement coefficient for an arbitrary number of raters (2, 3, +) when the input data represent the raw ratings reported for each subject and each rater.
 #' @param ratings An nxr matrix / data frame of ratings where each column represents one rater and each row one subject.
 #' @param weights is a mandatory parameter that is either a string variable or a matrix. 
 #' The string describes one of the predefined weights and must take one of the values 
@@ -670,6 +710,14 @@ conger.kappa.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conf
 #' contains the following variables: "coeff.name" (coefficient name), "pa" (the percent agreement), "pe" (the percent chance 
 #' agreement), coeff.val (Brennan-Prediger coefficient estimate), "coeff.se" (standard error), "conf.int" (the confidence interval), 
 #' "p.value"(Brennan-Prediger coefficient's p-value), "w.name"(the weights' identification).
+#' @examples 
+#' #The dataset "cac.raw4raters" comes with this package. Analyze it as follows:
+#' cac.raw4raters
+#' bp.coeff.raw(cac.raw4raters) #BP coefficient, precision measures, weights & categories
+#' bp.coeff.raw(cac.raw4raters)$est #Brennan-Prediger coefficient with precision measures
+#' bp <- bp.coeff.raw(cac.raw4raters)$est$coeff.val #Yields Brennan-Prediger coefficient alone.
+#' bp
+#' bp.coeff.raw(cac.raw4raters, weights = "quadratic") #weighted Brennan-Prediger coefficient
 #' @references Brennan, R.L., \& Prediger, D. J. (1981). ``Coefficient Kappa: some uses, misuses, and alternatives." \emph{Educational and Psychological Measurement}, 41, 687-699.
 #' @export
 bp.coeff.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conflev=0.95,N=Inf){ 
@@ -763,7 +811,6 @@ bp.coeff.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conflev=
 #' An r function for trimming leading and trealing blanks
 #' @param  x is a string variable.
 #' @return A string variable where leading and trealing blanks are trimmed.
-#' @export
 trim <- function( x ) {
   gsub("(^[[:space:]]+|[[:space:]]+$)", "", x) 
 }

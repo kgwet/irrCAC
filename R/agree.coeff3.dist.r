@@ -33,6 +33,16 @@
 #' @return A vector containing the following information: pa(the percent agreement),pe(the percent chance agreement),
 #' coeff(Gwet's AC1 or AC2 dependending on whether weights are used or not),stderr(the standard error of Gwet's coefficient),
 #' conf.int(the confidence interval of Gwet's coefficient), p.value(the p-value of Gwet's coefficient),coeff.name (AC1/AC2).
+#' @examples 
+#' #The dataset "distrib.6raters" comes with this package. It represents the distribution of 6 raters 
+#' #by subject and by category. Note that each row of this dataset sums to the number of raters, which
+#' #is 6. You may this dataset as follows:
+#' distrib.6raters
+#' gwet.ac1.dist(distrib.6raters) #AC1 coefficient, precision measures, weights & list of categories
+#' ac1 <- gwet.ac1.dist(distrib.6raters)$coeff #Yields AC1 coefficient alone.
+#' ac1
+#' q <- ncol(distrib.6raters) #Number of categories
+#' gwet.ac1.dist(distrib.6raters,weights = quadratic.weights(1:q)) #AC2 with quadratic weights
 #' @source Gwet, K. L. (2008). ``Computing inter-rater reliability and its variance in the presence of high agreement," 
 #' \emph{British Journal of Mathematical and Statistical Psychology}, 61, 29-48.
 #' @export
@@ -135,6 +145,16 @@ gwet.ac1.dist <- function(ratings,weights="unweighted",categ=NULL,conflev=0.95,N
 #' pa(the percent agreement),pe(the percent chance agreement),coeff(Fleiss' agreement coefficient),
 #' stderr(the standard error of Fleiss' coefficient),conf.int(the confidence interval of Fleiss Kappa coefficient),
 #' p.value(the p-value of Fleiss' coefficient),coeff.name ("Fleiss").
+#' @examples 
+#' #The dataset "distrib.6raters" comes with this package. It represents the distribution of 6 raters 
+#' #by subject and by category. Note that each row of this dataset sums to the number of raters, which
+#' #is 6. You may this dataset as follows:
+#' distrib.6raters
+#' fleiss.kappa.dist(distrib.6raters) #Fleiss' kappa, precision measures, weights & list of categories
+#' fleiss <- fleiss.kappa.dist(distrib.6raters)$coeff #Yields Fleiss' kappa alone.
+#' fleiss
+#' q <- ncol(distrib.6raters) #Number of categories
+#' fleiss.kappa.dist(distrib.6raters,weights = quadratic.weights(1:q)) #Weighted fleiss/quadratic wts
 #' @source Fleiss, J. L. (1981). \emph{Statistical Methods for Rates and Proportions}. John Wiley & Sons.
 #' @export
 fleiss.kappa.dist <- function(ratings,weights="unweighted",categ=NULL,conflev=0.95,N=Inf){ 
@@ -245,6 +265,16 @@ fleiss.kappa.dist <- function(ratings,weights="unweighted",categ=NULL,conflev=0.
 #' pa(the percent agreement),pe(the percent chance agreement),coeff(Krippendorff's alpha),
 #' stderr(the standard error of Krippendorff's coefficient),conf.int(the confidence interval of Krippendorff's alpha coefficient),
 #' p.value(the p-value of Krippendorff's alpha), coeff.name ("krippen alpha").
+#' @examples 
+#' #The dataset "distrib.6raters" comes with this package. It represents the distribution of 6 raters 
+#' #by subject and by category. Note that each row of this dataset sums to the number of raters, which
+#' #is 6. You may this dataset as follows:
+#' distrib.6raters
+#' krippen.alpha.dist(distrib.6raters) #Krippendorff's alpha, precision measures, weights & categories
+#' alpha <- krippen.alpha.dist(distrib.6raters)$coeff #Yields Krippendorff's alpha coefficient alone.
+#' alpha
+#' q <- ncol(distrib.6raters) #Number of categories
+#' krippen.alpha.dist(distrib.6raters,weights = quadratic.weights(1:q)) #Weighted alpha
 #' @source Gwet, K. (2014). \emph{Handbook of Inter-Rater Reliability: The Definitive Guide to Measuring the Extent of Agreement Among 
 #' Multiple Raters}, 4th Edition.  Advanced Analytics, LLC
 #' Krippendorff (1970). ``Bivariate agreement coefficients for reliability of data," \emph{Sociological Methodology},2,139-150
@@ -359,6 +389,16 @@ krippen.alpha.dist <- function(ratings,weights="unweighted",categ=NULL,conflev=0
 #' pa(the percent agreement),pe(the percent chance agreement),coeff(Brennan-Prediger coefficient),
 #' stderr(the standard error of Brennan-Prediger coefficient),conf.int(the p-value of Brennan-Prediger coefficient), 
 #' p.value(the p-value of Brennan-Prediger coefficient),coeff.name ("Brennan-Prediger").
+#' @examples 
+#' #The dataset "distrib.6raters" comes with this package. It represents the distribution of 6 raters 
+#' #by subject and by category. Note that each row of this dataset sums to the number of raters, which
+#' #is 6. You may this dataset as follows:
+#' distrib.6raters
+#' bp.coeff.dist(distrib.6raters) #BP coefficient, precision measures, weights & list of categories
+#' bp <- bp.coeff.dist(distrib.6raters)$coeff #Yields Brennan-Prediger coefficient alone.
+#' bp
+#' q <- ncol(distrib.6raters) #Number of categories
+#' bp.coeff.dist(distrib.6raters,weights = quadratic.weights(1:q)) #Weighted BP with quadratic weights
 #' @source Brennan, R.L., and Prediger, D. J. (1981). ``Coefficient Kappa: some uses, misuses, and alternatives," 
 #' \emph{Educational and Psychological Measurement}, 41, 687-699.
 #' @export
@@ -448,6 +488,16 @@ bp.coeff.dist <- function(ratings,weights="unweighted",categ=NULL,conflev=0.95,N
 #' pa(the percent agreement),pe(the percent chance agreement),coeff(Brennan-Prediger coefficient),
 #' stderr(the standard error of Brennan-Prediger coefficient),conf.int(the p-value of Brennan-Prediger coefficient), 
 #' p.value(the p-value of Brennan-Prediger coefficient),coeff.name ("Brennan-Prediger").
+#' @examples 
+#' #The dataset "distrib.6raters" comes with this package. It represents the distribution of 6 raters 
+#' #by subject and by category. Note that each row of this dataset sums to the number of raters, which
+#' #is 6. You may this dataset as follows:
+#' distrib.6raters
+#' pa.coeff.dist(distrib.6raters) #percent agreement, precision measures, weights& list of categories
+#' pa <- pa.coeff.dist(distrib.6raters)$coeff #Yields the percent agreement coefficient alone.
+#' pa
+#' q <- ncol(distrib.6raters) #Number of categories
+#' pa.coeff.dist(distrib.6raters,weights = quadratic.weights(1:q)) #Weighted percent agreement
 #' @source Brennan, R.L., and Prediger, D. J. (1981). ``Coefficient Kappa: some uses, misuses, and alternatives," 
 #' \emph{Educational and Psychological Measurement}, 41, 687-699.
 #' @export
