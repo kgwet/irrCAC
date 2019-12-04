@@ -3,8 +3,8 @@ title: "Calculating Chance-corrected Agreement Coefficients (CAC)"
 author: "Kilem L. Gwet, Ph.D."
 date: "`r Sys.Date()`"
 output: 
-  pdf_document: default
   knitr:::html_vignette:
+  pdf_document: default
   html_document: default
 vignette: >
   %\VignetteEncoding{UTF-8}
@@ -58,7 +58,7 @@ Suppose that you only want to obtain Gwet's $\mbox{AC}_1$ coefficient, but don't
 Then use the variable ac1 to obtain $\mbox{AC}_1=`r round(ac1,3)`$.
 
 
-Another contingency table included in this package is named **cont3x3abstractors**.  You may use it to experiment with the r functions listed above.
+Another contingency table included in this package is named **cont3x3abstractors**.  You may use it to experiment with the r functions listed above. If you are interessted in the weighted agreement coefficients, you can find more information in [weighting.html](weighting.html).
 
 
 ## Computing agreement coefficients from the distribution of raters by subject & category
@@ -117,5 +117,5 @@ ac1$coeff.val
 
 
 # References:
-1. Gwet, K.L. (2014) *Handbook of Inter-Rater Reliability*, 4th Edition. Advanced Analytics, LLC.
-1. Klein, D. (2018)  "Implementing a general framework for assessing interrater agreement in Stata," \emph{The Stata Journal}, $\mathbf{18}$, 871-901.
+1. Gwet, K.L. (2014, [ISBN:978-0970806284](https://www.amazon.com/Handbook-Inter-Rater-Reliability-Definitive-Measuring/dp/0970806280/)). "*Handbook of Inter-Rater Reliability*," 4th Edition. Advanced Analytics, LLC
+1. Klein, D. (2018) doi:<https://doi.org/10.1177/1536867X1801800408>. "Implementing a general framework for assessing interrater agreement in Stata," *The Stata Journal* Volume 18, Number 4, pp. 871-901.

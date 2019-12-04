@@ -100,4 +100,4 @@ The calculation of weighted agreement coefficients for this type of datasets is 
 ```
 
 # References:
-1. Gwet, K.L. (2014) *Handbook of Inter-Rater Reliability*, 4th Edition. Advanced Analytics, LLC.
+1. Gwet, K.L. (2014, [ISBN:978-0970806284](https://www.amazon.com/Handbook-Inter-Rater-Reliability-Definitive-Measuring/dp/0970806280/)). "*Handbook of Inter-Rater Reliability*," 4th Edition. Advanced Analytics, LLC

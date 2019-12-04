@@ -19,9 +19,9 @@
 
 <style type="text/css">code{white-space: pre;}</style>
 <style type="text/css" data-origin="pandoc">
-a.sourceLine { display: inline-block; line-height: 1.25; }
-a.sourceLine { pointer-events: none; color: inherit; text-decoration: inherit; }
-a.sourceLine:empty { height: 1.2em; }
+code.sourceCode > span { display: inline-block; line-height: 1.25; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode { white-space: pre; position: relative; }
 div.sourceCode { margin: 1em 0; }
@@ -31,14 +31,16 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 code.sourceCode { white-space: pre-wrap; }
-a.sourceLine { text-indent: -1em; padding-left: 1em; }
+code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
 }
-pre.numberSource a.sourceLine
-  { position: relative; left: -4em; }
-pre.numberSource a.sourceLine::before
-  { content: attr(title);
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
     position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; pointer-events: all; display: inline-block;
+    border: none; display: inline-block;
     -webkit-touch-callout: none; -webkit-user-select: none;
     -khtml-user-select: none; -moz-user-select: none;
     -ms-user-select: none; user-select: none;
@@ -47,9 +49,9 @@ pre.numberSource a.sourceLine::before
   }
 pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
 div.sourceCode
-  {  }
+  {   }
 @media screen {
-a.sourceLine::before { text-decoration: underline; }
+code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 code span.al { color: #ff0000; font-weight: bold; } /* Alert */
 code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
@@ -304,31 +306,31 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 
 
 
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">library</span>(irrCAC)</a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">library</span>(irrCAC)</span></code></pre></div>
 <div id="abstract" class="section level1">
 <h1>Abstract</h1>
 <p>The <strong>irrCAC</strong> is an R package that provides several functions for calculating various chance-corrected agreement coefficients (see <a href="overview.html">overview.html</a> for ageneral overview), their weighted versions using various weights (see <a href="weighting.html">weighting.html</a> for a more detailed discusssion on the weighting of agreement coefficients). In this document, I like to show you how you would implement the benchmarking approach discussed in chapter 6 of Gwet (2014). This package closely follows the general framework of inter-rater reliability assessment presented by Gwet (2014).</p>
 <p>In a nutshell, the problem consists of qualifying the magnitude of a given agreement coeffficient as <em>poor</em>, <em>good</em>, <em>very good</em>, or something else. There are essentially 3 bechmarking scales that have been mentioned in the inter-rater reliability, and which are covered in this package. These are the <strong>Landis-Koch</strong>, <strong>Altman</strong>, and <strong>Fleiss</strong> bechmarking scales defined as follows:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" title="1">landis.koch</a>
-<a class="sourceLine" id="cb2-2" title="2"><span class="co">#&gt;   lb.LK ub.LK      interp.LK</span></a>
-<a class="sourceLine" id="cb2-3" title="3"><span class="co">#&gt; 1   0.8   1.0 Almost Perfect</span></a>
-<a class="sourceLine" id="cb2-4" title="4"><span class="co">#&gt; 2   0.6   0.8    Substantial</span></a>
-<a class="sourceLine" id="cb2-5" title="5"><span class="co">#&gt; 3   0.4   0.6       Moderate</span></a>
-<a class="sourceLine" id="cb2-6" title="6"><span class="co">#&gt; 4   0.2   0.4           Fair</span></a>
-<a class="sourceLine" id="cb2-7" title="7"><span class="co">#&gt; 5   0.0   0.2         Slight</span></a>
-<a class="sourceLine" id="cb2-8" title="8"><span class="co">#&gt; 6  -1.0   0.0           Poor</span></a>
-<a class="sourceLine" id="cb2-9" title="9">altman</a>
-<a class="sourceLine" id="cb2-10" title="10"><span class="co">#&gt;   lb.AL ub.AL interp.AL</span></a>
-<a class="sourceLine" id="cb2-11" title="11"><span class="co">#&gt; 1   0.8   1.0 Very Good</span></a>
-<a class="sourceLine" id="cb2-12" title="12"><span class="co">#&gt; 2   0.6   0.8      Good</span></a>
-<a class="sourceLine" id="cb2-13" title="13"><span class="co">#&gt; 3   0.4   0.6  Moderate</span></a>
-<a class="sourceLine" id="cb2-14" title="14"><span class="co">#&gt; 4   0.2   0.4      Fair</span></a>
-<a class="sourceLine" id="cb2-15" title="15"><span class="co">#&gt; 5  -1.0   0.2      Poor</span></a>
-<a class="sourceLine" id="cb2-16" title="16">fleiss</a>
-<a class="sourceLine" id="cb2-17" title="17"><span class="co">#&gt;   lb.FL ub.FL            interp.FL</span></a>
-<a class="sourceLine" id="cb2-18" title="18"><span class="co">#&gt; 1  0.75  1.00            Excellent</span></a>
-<a class="sourceLine" id="cb2-19" title="19"><span class="co">#&gt; 2  0.40  0.75 Intermediate to Good</span></a>
-<a class="sourceLine" id="cb2-20" title="20"><span class="co">#&gt; 3 -1.00  0.40                 Poor</span></a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a>landis.koch</span>
+<span id="cb2-2"><a href="#cb2-2"></a><span class="co">#&gt;   lb.LK ub.LK      interp.LK</span></span>
+<span id="cb2-3"><a href="#cb2-3"></a><span class="co">#&gt; 1   0.8   1.0 Almost Perfect</span></span>
+<span id="cb2-4"><a href="#cb2-4"></a><span class="co">#&gt; 2   0.6   0.8    Substantial</span></span>
+<span id="cb2-5"><a href="#cb2-5"></a><span class="co">#&gt; 3   0.4   0.6       Moderate</span></span>
+<span id="cb2-6"><a href="#cb2-6"></a><span class="co">#&gt; 4   0.2   0.4           Fair</span></span>
+<span id="cb2-7"><a href="#cb2-7"></a><span class="co">#&gt; 5   0.0   0.2         Slight</span></span>
+<span id="cb2-8"><a href="#cb2-8"></a><span class="co">#&gt; 6  -1.0   0.0           Poor</span></span>
+<span id="cb2-9"><a href="#cb2-9"></a>altman</span>
+<span id="cb2-10"><a href="#cb2-10"></a><span class="co">#&gt;   lb.AL ub.AL interp.AL</span></span>
+<span id="cb2-11"><a href="#cb2-11"></a><span class="co">#&gt; 1   0.8   1.0 Very Good</span></span>
+<span id="cb2-12"><a href="#cb2-12"></a><span class="co">#&gt; 2   0.6   0.8      Good</span></span>
+<span id="cb2-13"><a href="#cb2-13"></a><span class="co">#&gt; 3   0.4   0.6  Moderate</span></span>
+<span id="cb2-14"><a href="#cb2-14"></a><span class="co">#&gt; 4   0.2   0.4      Fair</span></span>
+<span id="cb2-15"><a href="#cb2-15"></a><span class="co">#&gt; 5  -1.0   0.2      Poor</span></span>
+<span id="cb2-16"><a href="#cb2-16"></a>fleiss</span>
+<span id="cb2-17"><a href="#cb2-17"></a><span class="co">#&gt;   lb.FL ub.FL            interp.FL</span></span>
+<span id="cb2-18"><a href="#cb2-18"></a><span class="co">#&gt; 1  0.75  1.00            Excellent</span></span>
+<span id="cb2-19"><a href="#cb2-19"></a><span class="co">#&gt; 2  0.40  0.75 Intermediate to Good</span></span>
+<span id="cb2-20"><a href="#cb2-20"></a><span class="co">#&gt; 3 -1.00  0.40                 Poor</span></span></code></pre></div>
 <p>These are data frames that become available to you as soon as you you install the irrCAC package.</p>
 </div>
 <div id="section" class="section level1">
@@ -337,30 +339,30 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <div id="interpreting-the-magnitude-of-agreement-coeeficients" class="section level1">
 <h1>Interpreting the magnitude of agreement coeeficients</h1>
 <p>Suppose that you computed Gwet’s <span class="math inline">\(\mbox{AC}_1\)</span> coefficient using raw ratings from the dataset <strong>cac.raw4raters</strong>. You now want to qualify the magnitude of this coefficient using one of the benchmarking scales. Although you would normally choose one of the 3 benchmarking scales, I will use all 3 for illustration purposes. You would proceed as follows:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" title="1">  ac1 &lt;-<span class="st"> </span><span class="kw">gwet.ac1.raw</span>(cac.raw4raters)<span class="op">$</span>est</a>
-<a class="sourceLine" id="cb3-2" title="2">  <span class="kw">data.frame</span>(ac1<span class="op">$</span>coeff.val, ac1<span class="op">$</span>coeff.se)</a>
-<a class="sourceLine" id="cb3-3" title="3"><span class="co">#&gt;   ac1.coeff.val ac1.coeff.se</span></a>
-<a class="sourceLine" id="cb3-4" title="4"><span class="co">#&gt; 1       0.77544      0.14295</span></a>
-<a class="sourceLine" id="cb3-5" title="5">  <span class="kw">landis.koch.bf</span>(ac1<span class="op">$</span>coeff.val, ac1<span class="op">$</span>coeff.se)</a>
-<a class="sourceLine" id="cb3-6" title="6"><span class="co">#&gt;                 Landis-Koch CumProb</span></a>
-<a class="sourceLine" id="cb3-7" title="7"><span class="co">#&gt; (0.8 to 1)   Almost Perfect 0.39674</span></a>
-<a class="sourceLine" id="cb3-8" title="8"><span class="co">#&gt; (0.6 to 0.8)    Substantial 0.88336</span></a>
-<a class="sourceLine" id="cb3-9" title="9"><span class="co">#&gt; (0.4 to 0.6)       Moderate 0.99542</span></a>
-<a class="sourceLine" id="cb3-10" title="10"><span class="co">#&gt; (0.2 to 0.4)           Fair 0.99997</span></a>
-<a class="sourceLine" id="cb3-11" title="11"><span class="co">#&gt; (0 to 0.2)           Slight       1</span></a>
-<a class="sourceLine" id="cb3-12" title="12"><span class="co">#&gt; (-1 to 0)              Poor       1</span></a>
-<a class="sourceLine" id="cb3-13" title="13">  <span class="kw">altman.bf</span>(ac1<span class="op">$</span>coeff.val, ac1<span class="op">$</span>coeff.se)</a>
-<a class="sourceLine" id="cb3-14" title="14"><span class="co">#&gt;                 Altman CumProb</span></a>
-<a class="sourceLine" id="cb3-15" title="15"><span class="co">#&gt; (0.8 to 1)   Very Good 0.39674</span></a>
-<a class="sourceLine" id="cb3-16" title="16"><span class="co">#&gt; (0.6 to 0.8)      Good 0.88336</span></a>
-<a class="sourceLine" id="cb3-17" title="17"><span class="co">#&gt; (0.4 to 0.6)  Moderate 0.99542</span></a>
-<a class="sourceLine" id="cb3-18" title="18"><span class="co">#&gt; (0.2 to 0.4)      Fair 0.99997</span></a>
-<a class="sourceLine" id="cb3-19" title="19"><span class="co">#&gt; (-1 to 0.2)       Poor       1</span></a>
-<a class="sourceLine" id="cb3-20" title="20">  <span class="kw">fleiss.bf</span>(ac1<span class="op">$</span>coeff.val, ac1<span class="op">$</span>coeff.se)</a>
-<a class="sourceLine" id="cb3-21" title="21"><span class="co">#&gt;                             Fleiss CumProb</span></a>
-<a class="sourceLine" id="cb3-22" title="22"><span class="co">#&gt; (0.75 to 1)              Excellent 0.54414</span></a>
-<a class="sourceLine" id="cb3-23" title="23"><span class="co">#&gt; (0.4 to 0.75) Intermediate to Good 0.99542</span></a>
-<a class="sourceLine" id="cb3-24" title="24"><span class="co">#&gt; (-1 to 0.4)                   Poor       1</span></a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a>  ac1 &lt;-<span class="st"> </span><span class="kw">gwet.ac1.raw</span>(cac.raw4raters)<span class="op">$</span>est</span>
+<span id="cb3-2"><a href="#cb3-2"></a>  <span class="kw">data.frame</span>(ac1<span class="op">$</span>coeff.val, ac1<span class="op">$</span>coeff.se)</span>
+<span id="cb3-3"><a href="#cb3-3"></a><span class="co">#&gt;   ac1.coeff.val ac1.coeff.se</span></span>
+<span id="cb3-4"><a href="#cb3-4"></a><span class="co">#&gt; 1       0.77544      0.14295</span></span>
+<span id="cb3-5"><a href="#cb3-5"></a>  <span class="kw">landis.koch.bf</span>(ac1<span class="op">$</span>coeff.val, ac1<span class="op">$</span>coeff.se)</span>
+<span id="cb3-6"><a href="#cb3-6"></a><span class="co">#&gt;                 Landis-Koch CumProb</span></span>
+<span id="cb3-7"><a href="#cb3-7"></a><span class="co">#&gt; (0.8 to 1)   Almost Perfect 0.39674</span></span>
+<span id="cb3-8"><a href="#cb3-8"></a><span class="co">#&gt; (0.6 to 0.8)    Substantial 0.88336</span></span>
+<span id="cb3-9"><a href="#cb3-9"></a><span class="co">#&gt; (0.4 to 0.6)       Moderate 0.99542</span></span>
+<span id="cb3-10"><a href="#cb3-10"></a><span class="co">#&gt; (0.2 to 0.4)           Fair 0.99997</span></span>
+<span id="cb3-11"><a href="#cb3-11"></a><span class="co">#&gt; (0 to 0.2)           Slight       1</span></span>
+<span id="cb3-12"><a href="#cb3-12"></a><span class="co">#&gt; (-1 to 0)              Poor       1</span></span>
+<span id="cb3-13"><a href="#cb3-13"></a>  <span class="kw">altman.bf</span>(ac1<span class="op">$</span>coeff.val, ac1<span class="op">$</span>coeff.se)</span>
+<span id="cb3-14"><a href="#cb3-14"></a><span class="co">#&gt;                 Altman CumProb</span></span>
+<span id="cb3-15"><a href="#cb3-15"></a><span class="co">#&gt; (0.8 to 1)   Very Good 0.39674</span></span>
+<span id="cb3-16"><a href="#cb3-16"></a><span class="co">#&gt; (0.6 to 0.8)      Good 0.88336</span></span>
+<span id="cb3-17"><a href="#cb3-17"></a><span class="co">#&gt; (0.4 to 0.6)  Moderate 0.99542</span></span>
+<span id="cb3-18"><a href="#cb3-18"></a><span class="co">#&gt; (0.2 to 0.4)      Fair 0.99997</span></span>
+<span id="cb3-19"><a href="#cb3-19"></a><span class="co">#&gt; (-1 to 0.2)       Poor       1</span></span>
+<span id="cb3-20"><a href="#cb3-20"></a>  <span class="kw">fleiss.bf</span>(ac1<span class="op">$</span>coeff.val, ac1<span class="op">$</span>coeff.se)</span>
+<span id="cb3-21"><a href="#cb3-21"></a><span class="co">#&gt;                             Fleiss CumProb</span></span>
+<span id="cb3-22"><a href="#cb3-22"></a><span class="co">#&gt; (0.75 to 1)              Excellent 0.54414</span></span>
+<span id="cb3-23"><a href="#cb3-23"></a><span class="co">#&gt; (0.4 to 0.75) Intermediate to Good 0.99542</span></span>
+<span id="cb3-24"><a href="#cb3-24"></a><span class="co">#&gt; (-1 to 0.4)                   Poor       1</span></span></code></pre></div>
 <p>Each of the functions <em>landis.koch.bf(ac1$coeff.val, ac1$coeff.se)</em>, <em>altman.bf(ac1$coeff.val, ac1$coeff.se)</em>, and <em>fleiss.bf(ac1$coeff.val, ac1$coeff.se)</em> produces 2 columns: the agreement strength level, and the associated cumulative membership probability (<em>CumProb</em>). <em>CumProb</em> represents the probability that the true agreement strength level is the one associated with the probability or one that is better. I recommended in Gwet (2014) to retain an agreement strength level that is associated with <em>ComProb</em> that exceeds 0.95. * Landis-Koch Scale Since <span class="math inline">\(\mbox{AC}_1=0.775\)</span> then according to the Landoch-Koch benchmarking scale, this agreement coefficient is deemed <em>Moderate</em> since the associated <em>CumProb</em> exceeds the thereshold of 0.95. It cannot be qualified as <em>substantial</em> due to its standard error of 0.14295 being high. See chapter 4 of Gwet (2014) for a more detailed discussion on this topic.</p>
 <ul>
 <li><p>Altman Scale According to Altman’s benchmarking scale, the <span class="math inline">\(\mbox{AC}_1\)</span> agreement coefficient of 0.775 is <em>Moderate</em> as well.</p></li>
@@ -373,7 +375,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <div id="references" class="section level1">
 <h1>References:</h1>
 <ol style="list-style-type: decimal">
-<li>Gwet, K.L. (2014) <em>Handbook of Inter-Rater Reliability</em>, 4th Edition. Advanced Analytics, LLC.</li>
+<li>Gwet, K.L. (2014, <a href="https://www.amazon.com/Handbook-Inter-Rater-Reliability-Definitive-Measuring/dp/0970806280/">ISBN:978-0970806284</a>). “<em>Handbook of Inter-Rater Reliability</em>,” 4th Edition. Advanced Analytics, LLC</li>
 </ol>
 </div>
 

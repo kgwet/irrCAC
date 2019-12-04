@@ -13,7 +13,7 @@
 
 <meta name="author" content="Kilem L. Gwet, Ph.D." />
 
-<meta name="date" content="2019-09-01" />
+<meta name="date" content="2019-09-16" />
 
 <title>Weighted Chance-corrected Agreement Coefficients</title>
 
@@ -21,9 +21,9 @@
 
 <style type="text/css">code{white-space: pre;}</style>
 <style type="text/css" data-origin="pandoc">
-a.sourceLine { display: inline-block; line-height: 1.25; }
-a.sourceLine { pointer-events: none; color: inherit; text-decoration: inherit; }
-a.sourceLine:empty { height: 1.2em; }
+code.sourceCode > span { display: inline-block; line-height: 1.25; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode { white-space: pre; position: relative; }
 div.sourceCode { margin: 1em 0; }
@@ -33,14 +33,16 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 code.sourceCode { white-space: pre-wrap; }
-a.sourceLine { text-indent: -1em; padding-left: 1em; }
+code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
 }
-pre.numberSource a.sourceLine
-  { position: relative; left: -4em; }
-pre.numberSource a.sourceLine::before
-  { content: attr(title);
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
     position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; pointer-events: all; display: inline-block;
+    border: none; display: inline-block;
     -webkit-touch-callout: none; -webkit-user-select: none;
     -khtml-user-select: none; -moz-user-select: none;
     -ms-user-select: none; user-select: none;
@@ -49,9 +51,9 @@ pre.numberSource a.sourceLine::before
   }
 pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
 div.sourceCode
-  {  }
+  {   }
 @media screen {
-a.sourceLine::before { text-decoration: underline; }
+code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 code span.al { color: #ff0000; font-weight: bold; } /* Alert */
 code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
@@ -304,11 +306,11 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 
 <h1 class="title toc-ignore">Weighted Chance-corrected Agreement Coefficients</h1>
 <h4 class="author">Kilem L. Gwet, Ph.D.</h4>
-<h4 class="date">2019-09-01</h4>
+<h4 class="date">2019-09-16</h4>
 
 
 
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">library</span>(irrCAC)</a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">library</span>(irrCAC)</span></code></pre></div>
 <div id="abstract" class="section level1">
 <h1>Abstract</h1>
 <p>The <strong>irrCAC</strong> is an R package that provides several functions for calculating various chance-corrected agreement coefficients. This package closely follows the general framework of inter-rater reliability assessment presented by Gwet (2014). The document <a href="overview.html">overview.html</a> provides a broad overview of the different ways you may compute various agreement coefficients using the irrCAC package. However, it is common for researchers to want to compute the weighted versions of agreement coefficients in order to account for the ordinal nature of some ratings.</p>
@@ -320,41 +322,41 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <div id="the-different-weights" class="section level1">
 <h1>The different weights</h1>
 <p>A set of weights to be applied to an agreement is generally defined in the form a matrix (i.e. a square table) whose dimension is defined par the number of categories into which the rater can classify each subject. Although the user can define her own custom weights, the inter-rater reliability literature offers predefined weights, which can be generated using functions in this package as follows:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" title="1">  <span class="kw">identity.weights</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">3</span>)</a>
-<a class="sourceLine" id="cb2-2" title="2"><span class="co">#&gt;      [,1] [,2] [,3]</span></a>
-<a class="sourceLine" id="cb2-3" title="3"><span class="co">#&gt; [1,]    1    0    0</span></a>
-<a class="sourceLine" id="cb2-4" title="4"><span class="co">#&gt; [2,]    0    1    0</span></a>
-<a class="sourceLine" id="cb2-5" title="5"><span class="co">#&gt; [3,]    0    0    1</span></a>
-<a class="sourceLine" id="cb2-6" title="6">  <span class="kw">radical.weights</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">3</span>)</a>
-<a class="sourceLine" id="cb2-7" title="7"><span class="co">#&gt;           [,1]      [,2]      [,3]</span></a>
-<a class="sourceLine" id="cb2-8" title="8"><span class="co">#&gt; [1,] 1.0000000 0.2928932 0.0000000</span></a>
-<a class="sourceLine" id="cb2-9" title="9"><span class="co">#&gt; [2,] 0.2928932 1.0000000 0.2928932</span></a>
-<a class="sourceLine" id="cb2-10" title="10"><span class="co">#&gt; [3,] 0.0000000 0.2928932 1.0000000</span></a>
-<a class="sourceLine" id="cb2-11" title="11">  <span class="kw">linear.weights</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">3</span>)</a>
-<a class="sourceLine" id="cb2-12" title="12"><span class="co">#&gt;      [,1] [,2] [,3]</span></a>
-<a class="sourceLine" id="cb2-13" title="13"><span class="co">#&gt; [1,]  1.0  0.5  0.0</span></a>
-<a class="sourceLine" id="cb2-14" title="14"><span class="co">#&gt; [2,]  0.5  1.0  0.5</span></a>
-<a class="sourceLine" id="cb2-15" title="15"><span class="co">#&gt; [3,]  0.0  0.5  1.0</span></a>
-<a class="sourceLine" id="cb2-16" title="16">  <span class="kw">ordinal.weights</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">3</span>)</a>
-<a class="sourceLine" id="cb2-17" title="17"><span class="co">#&gt;           [,1]      [,2]      [,3]</span></a>
-<a class="sourceLine" id="cb2-18" title="18"><span class="co">#&gt; [1,] 1.0000000 0.6666667 0.0000000</span></a>
-<a class="sourceLine" id="cb2-19" title="19"><span class="co">#&gt; [2,] 0.6666667 1.0000000 0.6666667</span></a>
-<a class="sourceLine" id="cb2-20" title="20"><span class="co">#&gt; [3,] 0.0000000 0.6666667 1.0000000</span></a>
-<a class="sourceLine" id="cb2-21" title="21">  <span class="kw">quadratic.weights</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">3</span>)</a>
-<a class="sourceLine" id="cb2-22" title="22"><span class="co">#&gt;      [,1] [,2] [,3]</span></a>
-<a class="sourceLine" id="cb2-23" title="23"><span class="co">#&gt; [1,] 1.00 0.75 0.00</span></a>
-<a class="sourceLine" id="cb2-24" title="24"><span class="co">#&gt; [2,] 0.75 1.00 0.75</span></a>
-<a class="sourceLine" id="cb2-25" title="25"><span class="co">#&gt; [3,] 0.00 0.75 1.00</span></a>
-<a class="sourceLine" id="cb2-26" title="26">  <span class="kw">circular.weights</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">3</span>)</a>
-<a class="sourceLine" id="cb2-27" title="27"><span class="co">#&gt;              [,1]         [,2]         [,3]</span></a>
-<a class="sourceLine" id="cb2-28" title="28"><span class="co">#&gt; [1,] 1.000000e+00 3.330669e-16 0.000000e+00</span></a>
-<a class="sourceLine" id="cb2-29" title="29"><span class="co">#&gt; [2,] 3.330669e-16 1.000000e+00 3.330669e-16</span></a>
-<a class="sourceLine" id="cb2-30" title="30"><span class="co">#&gt; [3,] 0.000000e+00 3.330669e-16 1.000000e+00</span></a>
-<a class="sourceLine" id="cb2-31" title="31">  <span class="kw">bipolar.weights</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">3</span>)</a>
-<a class="sourceLine" id="cb2-32" title="32"><span class="co">#&gt;           [,1]      [,2]      [,3]</span></a>
-<a class="sourceLine" id="cb2-33" title="33"><span class="co">#&gt; [1,] 1.0000000 0.6666667 0.0000000</span></a>
-<a class="sourceLine" id="cb2-34" title="34"><span class="co">#&gt; [2,] 0.6666667 1.0000000 0.6666667</span></a>
-<a class="sourceLine" id="cb2-35" title="35"><span class="co">#&gt; [3,] 0.0000000 0.6666667 1.0000000</span></a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a>  <span class="kw">identity.weights</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">3</span>)</span>
+<span id="cb2-2"><a href="#cb2-2"></a><span class="co">#&gt;      [,1] [,2] [,3]</span></span>
+<span id="cb2-3"><a href="#cb2-3"></a><span class="co">#&gt; [1,]    1    0    0</span></span>
+<span id="cb2-4"><a href="#cb2-4"></a><span class="co">#&gt; [2,]    0    1    0</span></span>
+<span id="cb2-5"><a href="#cb2-5"></a><span class="co">#&gt; [3,]    0    0    1</span></span>
+<span id="cb2-6"><a href="#cb2-6"></a>  <span class="kw">radical.weights</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">3</span>)</span>
+<span id="cb2-7"><a href="#cb2-7"></a><span class="co">#&gt;           [,1]      [,2]      [,3]</span></span>
+<span id="cb2-8"><a href="#cb2-8"></a><span class="co">#&gt; [1,] 1.0000000 0.2928932 0.0000000</span></span>
+<span id="cb2-9"><a href="#cb2-9"></a><span class="co">#&gt; [2,] 0.2928932 1.0000000 0.2928932</span></span>
+<span id="cb2-10"><a href="#cb2-10"></a><span class="co">#&gt; [3,] 0.0000000 0.2928932 1.0000000</span></span>
+<span id="cb2-11"><a href="#cb2-11"></a>  <span class="kw">linear.weights</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">3</span>)</span>
+<span id="cb2-12"><a href="#cb2-12"></a><span class="co">#&gt;      [,1] [,2] [,3]</span></span>
+<span id="cb2-13"><a href="#cb2-13"></a><span class="co">#&gt; [1,]  1.0  0.5  0.0</span></span>
+<span id="cb2-14"><a href="#cb2-14"></a><span class="co">#&gt; [2,]  0.5  1.0  0.5</span></span>
+<span id="cb2-15"><a href="#cb2-15"></a><span class="co">#&gt; [3,]  0.0  0.5  1.0</span></span>
+<span id="cb2-16"><a href="#cb2-16"></a>  <span class="kw">ordinal.weights</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">3</span>)</span>
+<span id="cb2-17"><a href="#cb2-17"></a><span class="co">#&gt;           [,1]      [,2]      [,3]</span></span>
+<span id="cb2-18"><a href="#cb2-18"></a><span class="co">#&gt; [1,] 1.0000000 0.6666667 0.0000000</span></span>
+<span id="cb2-19"><a href="#cb2-19"></a><span class="co">#&gt; [2,] 0.6666667 1.0000000 0.6666667</span></span>
+<span id="cb2-20"><a href="#cb2-20"></a><span class="co">#&gt; [3,] 0.0000000 0.6666667 1.0000000</span></span>
+<span id="cb2-21"><a href="#cb2-21"></a>  <span class="kw">quadratic.weights</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">3</span>)</span>
+<span id="cb2-22"><a href="#cb2-22"></a><span class="co">#&gt;      [,1] [,2] [,3]</span></span>
+<span id="cb2-23"><a href="#cb2-23"></a><span class="co">#&gt; [1,] 1.00 0.75 0.00</span></span>
+<span id="cb2-24"><a href="#cb2-24"></a><span class="co">#&gt; [2,] 0.75 1.00 0.75</span></span>
+<span id="cb2-25"><a href="#cb2-25"></a><span class="co">#&gt; [3,] 0.00 0.75 1.00</span></span>
+<span id="cb2-26"><a href="#cb2-26"></a>  <span class="kw">circular.weights</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">3</span>)</span>
+<span id="cb2-27"><a href="#cb2-27"></a><span class="co">#&gt;              [,1]         [,2]         [,3]</span></span>
+<span id="cb2-28"><a href="#cb2-28"></a><span class="co">#&gt; [1,] 1.000000e+00 3.330669e-16 0.000000e+00</span></span>
+<span id="cb2-29"><a href="#cb2-29"></a><span class="co">#&gt; [2,] 3.330669e-16 1.000000e+00 3.330669e-16</span></span>
+<span id="cb2-30"><a href="#cb2-30"></a><span class="co">#&gt; [3,] 0.000000e+00 3.330669e-16 1.000000e+00</span></span>
+<span id="cb2-31"><a href="#cb2-31"></a>  <span class="kw">bipolar.weights</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">3</span>)</span>
+<span id="cb2-32"><a href="#cb2-32"></a><span class="co">#&gt;           [,1]      [,2]      [,3]</span></span>
+<span id="cb2-33"><a href="#cb2-33"></a><span class="co">#&gt; [1,] 1.0000000 0.6666667 0.0000000</span></span>
+<span id="cb2-34"><a href="#cb2-34"></a><span class="co">#&gt; [2,] 0.6666667 1.0000000 0.6666667</span></span>
+<span id="cb2-35"><a href="#cb2-35"></a><span class="co">#&gt; [3,] 0.0000000 0.6666667 1.0000000</span></span></code></pre></div>
 <p>You may need to read chapter 3 of Gwet (2014) for a more detailed discussion of weighted agreement coefficients. Identifty weights yield unweighted coefficients and the most commonly-used weights are the quadratic and linear weights.</p>
 </div>
 <div id="section-1" class="section level1">
@@ -371,30 +373,30 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <div id="weighting-ratings-from-a-contingency-table" class="section level2">
 <h2>Weighting ratings from a contingency table</h2>
 <p>Suppose you want to use quadratic weights to compute various weighted coefficients using the dataset <em>cont3x3abstractors</em>. Using the <em>quadratic.weights</em> function presented above, you would proceed as follows:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" title="1">  cont3x3abstractors</a>
-<a class="sourceLine" id="cb3-2" title="2"><span class="co">#&gt;         Ectopic AIU NIU</span></a>
-<a class="sourceLine" id="cb3-3" title="3"><span class="co">#&gt; Ectopic      13   0   0</span></a>
-<a class="sourceLine" id="cb3-4" title="4"><span class="co">#&gt; AIU           0  20   7</span></a>
-<a class="sourceLine" id="cb3-5" title="5"><span class="co">#&gt; NIU           0   4  56</span></a>
-<a class="sourceLine" id="cb3-6" title="6">  q &lt;-<span class="st"> </span><span class="kw">nrow</span>(cont3x3abstractors)</a>
-<a class="sourceLine" id="cb3-7" title="7">  <span class="kw">kappa2.table</span>(cont3x3abstractors,<span class="dt">weights =</span> <span class="kw">quadratic.weights</span>(<span class="dv">1</span><span class="op">:</span>q))</a>
-<a class="sourceLine" id="cb3-8" title="8"><span class="co">#&gt;      coeff.name coeff.val   coeff.se      coeff.ci coeff.pval</span></a>
-<a class="sourceLine" id="cb3-9" title="9"><span class="co">#&gt; 1 Cohen&#39;s Kappa 0.8921569 0.03535151 (0.822,0.962)      0e+00</span></a>
-<a class="sourceLine" id="cb3-10" title="10">  <span class="kw">scott2.table</span>(cont3x3abstractors,<span class="dt">weights =</span> <span class="kw">quadratic.weights</span>(<span class="dv">1</span><span class="op">:</span>q))</a>
-<a class="sourceLine" id="cb3-11" title="11"><span class="co">#&gt;   coeff.name coeff.val   coeff.se      coeff.ci coeff.pval</span></a>
-<a class="sourceLine" id="cb3-12" title="12"><span class="co">#&gt; 1 Scott&#39;s Pi 0.8921093 0.03539506 (0.822,0.962)      0e+00</span></a>
-<a class="sourceLine" id="cb3-13" title="13">  <span class="kw">gwet.ac1.table</span>(cont3x3abstractors,<span class="dt">weights =</span> <span class="kw">quadratic.weights</span>(<span class="dv">1</span><span class="op">:</span>q))</a>
-<a class="sourceLine" id="cb3-14" title="14"><span class="co">#&gt;   coeff.name coeff.val   coeff.se      coeff.ci coeff.pval</span></a>
-<a class="sourceLine" id="cb3-15" title="15"><span class="co">#&gt; 1 Gwet&#39;s AC2 0.9402369 0.01792019 (0.905,0.976)      0e+00</span></a>
-<a class="sourceLine" id="cb3-16" title="16">  <span class="kw">bp2.table</span>(cont3x3abstractors,<span class="dt">weights =</span> <span class="kw">quadratic.weights</span>(<span class="dv">1</span><span class="op">:</span>q))</a>
-<a class="sourceLine" id="cb3-17" title="17"><span class="co">#&gt;         coeff.name coeff.val   coeff.se      coeff.ci coeff.pval</span></a>
-<a class="sourceLine" id="cb3-18" title="18"><span class="co">#&gt; 1 Brennan-Prediger    0.9175 0.02346673 (0.871,0.964)      0e+00</span></a>
-<a class="sourceLine" id="cb3-19" title="19">  <span class="kw">krippen2.table</span>(cont3x3abstractors,<span class="dt">weights =</span> <span class="kw">quadratic.weights</span>(<span class="dv">1</span><span class="op">:</span>q))</a>
-<a class="sourceLine" id="cb3-20" title="20"><span class="co">#&gt;             coeff.name coeff.val   coeff.se      coeff.ci coeff.pval</span></a>
-<a class="sourceLine" id="cb3-21" title="21"><span class="co">#&gt; 1 Krippendorff&#39;s Alpha 0.8926487 0.03539506 (0.822,0.963)      0e+00</span></a>
-<a class="sourceLine" id="cb3-22" title="22">  <span class="kw">pa2.table</span>(cont3x3abstractors,<span class="dt">weights =</span> <span class="kw">quadratic.weights</span>(<span class="dv">1</span><span class="op">:</span>q))</a>
-<a class="sourceLine" id="cb3-23" title="23"><span class="co">#&gt;          coeff.name coeff.val    coeff.se      coeff.ci coeff.pval</span></a>
-<a class="sourceLine" id="cb3-24" title="24"><span class="co">#&gt; 1 Percent Agreement    0.9725 0.007822244 (0.957,0.988)      0e+00</span></a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a>  cont3x3abstractors</span>
+<span id="cb3-2"><a href="#cb3-2"></a><span class="co">#&gt;         Ectopic AIU NIU</span></span>
+<span id="cb3-3"><a href="#cb3-3"></a><span class="co">#&gt; Ectopic      13   0   0</span></span>
+<span id="cb3-4"><a href="#cb3-4"></a><span class="co">#&gt; AIU           0  20   7</span></span>
+<span id="cb3-5"><a href="#cb3-5"></a><span class="co">#&gt; NIU           0   4  56</span></span>
+<span id="cb3-6"><a href="#cb3-6"></a>  q &lt;-<span class="st"> </span><span class="kw">nrow</span>(cont3x3abstractors)</span>
+<span id="cb3-7"><a href="#cb3-7"></a>  <span class="kw">kappa2.table</span>(cont3x3abstractors,<span class="dt">weights =</span> <span class="kw">quadratic.weights</span>(<span class="dv">1</span><span class="op">:</span>q))</span>
+<span id="cb3-8"><a href="#cb3-8"></a><span class="co">#&gt;      coeff.name coeff.val   coeff.se      coeff.ci coeff.pval</span></span>
+<span id="cb3-9"><a href="#cb3-9"></a><span class="co">#&gt; 1 Cohen&#39;s Kappa 0.8921569 0.03535151 (0.822,0.962)      0e+00</span></span>
+<span id="cb3-10"><a href="#cb3-10"></a>  <span class="kw">scott2.table</span>(cont3x3abstractors,<span class="dt">weights =</span> <span class="kw">quadratic.weights</span>(<span class="dv">1</span><span class="op">:</span>q))</span>
+<span id="cb3-11"><a href="#cb3-11"></a><span class="co">#&gt;   coeff.name coeff.val   coeff.se      coeff.ci coeff.pval</span></span>
+<span id="cb3-12"><a href="#cb3-12"></a><span class="co">#&gt; 1 Scott&#39;s Pi 0.8921093 0.03539506 (0.822,0.962)      0e+00</span></span>
+<span id="cb3-13"><a href="#cb3-13"></a>  <span class="kw">gwet.ac1.table</span>(cont3x3abstractors,<span class="dt">weights =</span> <span class="kw">quadratic.weights</span>(<span class="dv">1</span><span class="op">:</span>q))</span>
+<span id="cb3-14"><a href="#cb3-14"></a><span class="co">#&gt;   coeff.name coeff.val   coeff.se      coeff.ci coeff.pval</span></span>
+<span id="cb3-15"><a href="#cb3-15"></a><span class="co">#&gt; 1 Gwet&#39;s AC2 0.9402369 0.01792019 (0.905,0.976)      0e+00</span></span>
+<span id="cb3-16"><a href="#cb3-16"></a>  <span class="kw">bp2.table</span>(cont3x3abstractors,<span class="dt">weights =</span> <span class="kw">quadratic.weights</span>(<span class="dv">1</span><span class="op">:</span>q))</span>
+<span id="cb3-17"><a href="#cb3-17"></a><span class="co">#&gt;         coeff.name coeff.val   coeff.se      coeff.ci coeff.pval</span></span>
+<span id="cb3-18"><a href="#cb3-18"></a><span class="co">#&gt; 1 Brennan-Prediger    0.9175 0.02346673 (0.871,0.964)      0e+00</span></span>
+<span id="cb3-19"><a href="#cb3-19"></a>  <span class="kw">krippen2.table</span>(cont3x3abstractors,<span class="dt">weights =</span> <span class="kw">quadratic.weights</span>(<span class="dv">1</span><span class="op">:</span>q))</span>
+<span id="cb3-20"><a href="#cb3-20"></a><span class="co">#&gt;             coeff.name coeff.val   coeff.se      coeff.ci coeff.pval</span></span>
+<span id="cb3-21"><a href="#cb3-21"></a><span class="co">#&gt; 1 Krippendorff&#39;s Alpha 0.8926487 0.03539506 (0.822,0.963)      0e+00</span></span>
+<span id="cb3-22"><a href="#cb3-22"></a>  <span class="kw">pa2.table</span>(cont3x3abstractors,<span class="dt">weights =</span> <span class="kw">quadratic.weights</span>(<span class="dv">1</span><span class="op">:</span>q))</span>
+<span id="cb3-23"><a href="#cb3-23"></a><span class="co">#&gt;          coeff.name coeff.val    coeff.se      coeff.ci coeff.pval</span></span>
+<span id="cb3-24"><a href="#cb3-24"></a><span class="co">#&gt; 1 Percent Agreement    0.9725 0.007822244 (0.957,0.988)      0e+00</span></span></code></pre></div>
 <ul>
 <li><p>You may use any of the weight generating functions previously discusssed to change your weights.</p></li>
 <li><p>You may also supply your own custom set of weights to these functions. No need to stick to the weights recommended in the inter-rater reliability literature.</p></li>
@@ -403,36 +405,36 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <div id="weighting-for-a-dataset-of-raw-ratings" class="section level2">
 <h2>Weighting for a dataset of raw ratings</h2>
 <p>Suppose you want to use quadratic weights to compute various weighted coefficients using the dataset cac.raw4raters. You would proceed as follows:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" title="1">  <span class="kw">pa.coeff.raw</span>(cac.raw4raters,<span class="dt">weights =</span> <span class="st">&quot;quadratic&quot;</span>)<span class="op">$</span>est</a>
-<a class="sourceLine" id="cb4-2" title="2"><span class="co">#&gt;          coeff.name        pa pe coeff.val coeff.se  conf.int      p.value</span></a>
-<a class="sourceLine" id="cb4-3" title="3"><span class="co">#&gt; 1 Percent Agreement 0.9753788  0 0.9753788  0.09062 (0.776,1) 3.526377e-07</span></a>
-<a class="sourceLine" id="cb4-4" title="4"><span class="co">#&gt;      w.name</span></a>
-<a class="sourceLine" id="cb4-5" title="5"><span class="co">#&gt; 1 quadratic</span></a>
-<a class="sourceLine" id="cb4-6" title="6">  <span class="kw">gwet.ac1.raw</span>(cac.raw4raters,<span class="dt">weights =</span> <span class="st">&quot;quadratic&quot;</span>)<span class="op">$</span>est</a>
-<a class="sourceLine" id="cb4-7" title="7"><span class="co">#&gt;   coeff.name        pa        pe coeff.val coeff.se  conf.int      p.value</span></a>
-<a class="sourceLine" id="cb4-8" title="8"><span class="co">#&gt; 1        AC2 0.9753788 0.7137044     0.914  0.10396 (0.685,1) 2.634438e-06</span></a>
-<a class="sourceLine" id="cb4-9" title="9"><span class="co">#&gt;      w.name</span></a>
-<a class="sourceLine" id="cb4-10" title="10"><span class="co">#&gt; 1 quadratic</span></a>
-<a class="sourceLine" id="cb4-11" title="11">  <span class="kw">fleiss.kappa.raw</span>(cac.raw4raters,<span class="dt">weights =</span> <span class="st">&quot;quadratic&quot;</span>)<span class="op">$</span>est</a>
-<a class="sourceLine" id="cb4-12" title="12"><span class="co">#&gt;      coeff.name        pa        pe coeff.val coeff.se  conf.int</span></a>
-<a class="sourceLine" id="cb4-13" title="13"><span class="co">#&gt; 1 Fleiss&#39; Kappa 0.9753788 0.8177083   0.86494  0.14603 (0.544,1)</span></a>
-<a class="sourceLine" id="cb4-14" title="14"><span class="co">#&gt;        p.value    w.name</span></a>
-<a class="sourceLine" id="cb4-15" title="15"><span class="co">#&gt; 1 9.976081e-05 quadratic</span></a>
-<a class="sourceLine" id="cb4-16" title="16">  <span class="kw">krippen.alpha.raw</span>(cac.raw4raters,<span class="dt">weights =</span> <span class="st">&quot;quadratic&quot;</span>)<span class="op">$</span>est</a>
-<a class="sourceLine" id="cb4-17" title="17"><span class="co">#&gt;             coeff.name        pa    pe coeff.val coeff.se  conf.int</span></a>
-<a class="sourceLine" id="cb4-18" title="18"><span class="co">#&gt; 1 Krippendorff&#39;s Alpha 0.9735938 0.825   0.84911  0.12913 (0.561,1)</span></a>
-<a class="sourceLine" id="cb4-19" title="19"><span class="co">#&gt;        p.value    w.name</span></a>
-<a class="sourceLine" id="cb4-20" title="20"><span class="co">#&gt; 1 6.267448e-05 quadratic</span></a>
-<a class="sourceLine" id="cb4-21" title="21">  <span class="kw">conger.kappa.raw</span>(cac.raw4raters,<span class="dt">weights =</span> <span class="st">&quot;quadratic&quot;</span>)<span class="op">$</span>est</a>
-<a class="sourceLine" id="cb4-22" title="22"><span class="co">#&gt;       coeff.name        pa        pe coeff.val coeff.se  conf.int</span></a>
-<a class="sourceLine" id="cb4-23" title="23"><span class="co">#&gt; 1 Conger&#39;s Kappa 0.9753788 0.8269638   0.85771  0.14367 (0.541,1)</span></a>
-<a class="sourceLine" id="cb4-24" title="24"><span class="co">#&gt;        p.value    w.name</span></a>
-<a class="sourceLine" id="cb4-25" title="25"><span class="co">#&gt; 1 9.319979e-05 quadratic</span></a>
-<a class="sourceLine" id="cb4-26" title="26">  <span class="kw">bp.coeff.raw</span>(cac.raw4raters,<span class="dt">weights =</span> <span class="st">&quot;quadratic&quot;</span>)<span class="op">$</span>est</a>
-<a class="sourceLine" id="cb4-27" title="27"><span class="co">#&gt;         coeff.name        pa   pe coeff.val coeff.se  conf.int     p.value</span></a>
-<a class="sourceLine" id="cb4-28" title="28"><span class="co">#&gt; 1 Brennan-Prediger 0.9753788 0.75   0.90152  0.11089 (0.657,1) 5.60548e-06</span></a>
-<a class="sourceLine" id="cb4-29" title="29"><span class="co">#&gt;      w.name</span></a>
-<a class="sourceLine" id="cb4-30" title="30"><span class="co">#&gt; 1 quadratic</span></a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a>  <span class="kw">pa.coeff.raw</span>(cac.raw4raters,<span class="dt">weights =</span> <span class="st">&quot;quadratic&quot;</span>)<span class="op">$</span>est</span>
+<span id="cb4-2"><a href="#cb4-2"></a><span class="co">#&gt;          coeff.name        pa pe coeff.val coeff.se  conf.int      p.value</span></span>
+<span id="cb4-3"><a href="#cb4-3"></a><span class="co">#&gt; 1 Percent Agreement 0.9753788  0 0.9753788  0.09062 (0.776,1) 3.526377e-07</span></span>
+<span id="cb4-4"><a href="#cb4-4"></a><span class="co">#&gt;      w.name</span></span>
+<span id="cb4-5"><a href="#cb4-5"></a><span class="co">#&gt; 1 quadratic</span></span>
+<span id="cb4-6"><a href="#cb4-6"></a>  <span class="kw">gwet.ac1.raw</span>(cac.raw4raters,<span class="dt">weights =</span> <span class="st">&quot;quadratic&quot;</span>)<span class="op">$</span>est</span>
+<span id="cb4-7"><a href="#cb4-7"></a><span class="co">#&gt;   coeff.name        pa        pe coeff.val coeff.se  conf.int      p.value</span></span>
+<span id="cb4-8"><a href="#cb4-8"></a><span class="co">#&gt; 1        AC2 0.9753788 0.7137044     0.914  0.10396 (0.685,1) 2.634438e-06</span></span>
+<span id="cb4-9"><a href="#cb4-9"></a><span class="co">#&gt;      w.name</span></span>
+<span id="cb4-10"><a href="#cb4-10"></a><span class="co">#&gt; 1 quadratic</span></span>
+<span id="cb4-11"><a href="#cb4-11"></a>  <span class="kw">fleiss.kappa.raw</span>(cac.raw4raters,<span class="dt">weights =</span> <span class="st">&quot;quadratic&quot;</span>)<span class="op">$</span>est</span>
+<span id="cb4-12"><a href="#cb4-12"></a><span class="co">#&gt;      coeff.name        pa        pe coeff.val coeff.se  conf.int</span></span>
+<span id="cb4-13"><a href="#cb4-13"></a><span class="co">#&gt; 1 Fleiss&#39; Kappa 0.9753788 0.8177083   0.86494  0.14603 (0.544,1)</span></span>
+<span id="cb4-14"><a href="#cb4-14"></a><span class="co">#&gt;        p.value    w.name</span></span>
+<span id="cb4-15"><a href="#cb4-15"></a><span class="co">#&gt; 1 9.976081e-05 quadratic</span></span>
+<span id="cb4-16"><a href="#cb4-16"></a>  <span class="kw">krippen.alpha.raw</span>(cac.raw4raters,<span class="dt">weights =</span> <span class="st">&quot;quadratic&quot;</span>)<span class="op">$</span>est</span>
+<span id="cb4-17"><a href="#cb4-17"></a><span class="co">#&gt;             coeff.name        pa    pe coeff.val coeff.se  conf.int</span></span>
+<span id="cb4-18"><a href="#cb4-18"></a><span class="co">#&gt; 1 Krippendorff&#39;s Alpha 0.9735938 0.825   0.84911  0.12913 (0.561,1)</span></span>
+<span id="cb4-19"><a href="#cb4-19"></a><span class="co">#&gt;        p.value    w.name</span></span>
+<span id="cb4-20"><a href="#cb4-20"></a><span class="co">#&gt; 1 6.267448e-05 quadratic</span></span>
+<span id="cb4-21"><a href="#cb4-21"></a>  <span class="kw">conger.kappa.raw</span>(cac.raw4raters,<span class="dt">weights =</span> <span class="st">&quot;quadratic&quot;</span>)<span class="op">$</span>est</span>
+<span id="cb4-22"><a href="#cb4-22"></a><span class="co">#&gt;       coeff.name        pa        pe coeff.val coeff.se  conf.int</span></span>
+<span id="cb4-23"><a href="#cb4-23"></a><span class="co">#&gt; 1 Conger&#39;s Kappa 0.9753788 0.8269638   0.85771  0.14367 (0.541,1)</span></span>
+<span id="cb4-24"><a href="#cb4-24"></a><span class="co">#&gt;        p.value    w.name</span></span>
+<span id="cb4-25"><a href="#cb4-25"></a><span class="co">#&gt; 1 9.319979e-05 quadratic</span></span>
+<span id="cb4-26"><a href="#cb4-26"></a>  <span class="kw">bp.coeff.raw</span>(cac.raw4raters,<span class="dt">weights =</span> <span class="st">&quot;quadratic&quot;</span>)<span class="op">$</span>est</span>
+<span id="cb4-27"><a href="#cb4-27"></a><span class="co">#&gt;         coeff.name        pa   pe coeff.val coeff.se  conf.int     p.value</span></span>
+<span id="cb4-28"><a href="#cb4-28"></a><span class="co">#&gt; 1 Brennan-Prediger 0.9753788 0.75   0.90152  0.11089 (0.657,1) 5.60548e-06</span></span>
+<span id="cb4-29"><a href="#cb4-29"></a><span class="co">#&gt;      w.name</span></span>
+<span id="cb4-30"><a href="#cb4-30"></a><span class="co">#&gt; 1 quadratic</span></span></code></pre></div>
 <ul>
 <li><p>If you want to use a set of weights other than quadratic weights you may replace “quadratic” with one of the following strings of characters: “ordinal”, “linear”, “radical”, “ratio”, “circular”, or “bipolar”.</p></li>
 <li><p>You may also supply your own custom set of weights to these functions. In this case, the value of the <strong>weight</strong> parameter will not be a string of characters. Instead, it will be an actual matrix containing the weight values you have decided to use.</p></li>
@@ -441,33 +443,33 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <div id="weighting-when-input-data-is-the-distribution-of-raters-by-subject-and-rating" class="section level2">
 <h2>Weighting when input data is the distribution of raters by subject and rating</h2>
 <p>The calculation of weighted agreement coefficients for this type of datasets is very similar to the calculation of agreement coefficients with contingency tables. You need to use the weight-generating functions such as the <em>quadratic.weights()</em> fucntion to which the vector of ratings is supplied as parameter. As an example, suppose you want to compute various weighted agreement coefficients using quadratic weights and the <em>distrib.6raters</em> dataset. This would be accomplished as follows:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" title="1">  q &lt;-<span class="st"> </span><span class="kw">ncol</span>(distrib<span class="fl">.6</span>raters)</a>
-<a class="sourceLine" id="cb5-2" title="2">  <span class="kw">gwet.ac1.dist</span>(distrib<span class="fl">.6</span>raters,<span class="dt">weights =</span> <span class="kw">quadratic.weights</span>(<span class="dv">1</span><span class="op">:</span>q))</a>
-<a class="sourceLine" id="cb5-3" title="3"><span class="co">#&gt;   coeff.name     coeff    stderr      conf.int      p.value        pa</span></a>
-<a class="sourceLine" id="cb5-4" title="4"><span class="co">#&gt; 1 Gwet&#39;s AC2 0.4837438 0.1058227 (0.257,0.711) 0.0004356618 0.8544444</span></a>
-<a class="sourceLine" id="cb5-5" title="5"><span class="co">#&gt;          pe</span></a>
-<a class="sourceLine" id="cb5-6" title="6"><span class="co">#&gt; 1 0.7180556</span></a>
-<a class="sourceLine" id="cb5-7" title="7">  <span class="kw">fleiss.kappa.dist</span>(distrib<span class="fl">.6</span>raters,<span class="dt">weights =</span> <span class="kw">quadratic.weights</span>(<span class="dv">1</span><span class="op">:</span>q))</a>
-<a class="sourceLine" id="cb5-8" title="8"><span class="co">#&gt;      coeff.name     coeff    stderr       conf.int   p.value        pa</span></a>
-<a class="sourceLine" id="cb5-9" title="9"><span class="co">#&gt; 1 Fleiss&#39; Kappa 0.2511909 0.1457381 (-0.061,0.564) 0.1067865 0.8544444</span></a>
-<a class="sourceLine" id="cb5-10" title="10"><span class="co">#&gt;          pe</span></a>
-<a class="sourceLine" id="cb5-11" title="11"><span class="co">#&gt; 1 0.8056173</span></a>
-<a class="sourceLine" id="cb5-12" title="12">  <span class="kw">krippen.alpha.dist</span>(distrib<span class="fl">.6</span>raters,<span class="dt">weights =</span> <span class="kw">quadratic.weights</span>(<span class="dv">1</span><span class="op">:</span>q))</a>
-<a class="sourceLine" id="cb5-13" title="13"><span class="co">#&gt;             coeff.name    coeff   stderr       conf.int    p.value</span></a>
-<a class="sourceLine" id="cb5-14" title="14"><span class="co">#&gt; 1 Krippendorff&#39;s Alpha 0.259511 0.133958 (-0.028,0.547) 0.07315748</span></a>
-<a class="sourceLine" id="cb5-15" title="15"><span class="co">#&gt;          pa        pe</span></a>
-<a class="sourceLine" id="cb5-16" title="16"><span class="co">#&gt; 1 0.8560617 0.8056173</span></a>
-<a class="sourceLine" id="cb5-17" title="17">  <span class="kw">bp.coeff.dist</span>(distrib<span class="fl">.6</span>raters,<span class="dt">weights =</span> <span class="kw">quadratic.weights</span>(<span class="dv">1</span><span class="op">:</span>q))</a>
-<a class="sourceLine" id="cb5-18" title="18"><span class="co">#&gt;         coeff.name     coeff    stderr      conf.int     p.value        pa</span></a>
-<a class="sourceLine" id="cb5-19" title="19"><span class="co">#&gt; 1 Brennan-Prediger 0.4177778 0.1067493 (0.189,0.647) 0.001559352 0.8544444</span></a>
-<a class="sourceLine" id="cb5-20" title="20"><span class="co">#&gt;     pe</span></a>
-<a class="sourceLine" id="cb5-21" title="21"><span class="co">#&gt; 1 0.75</span></a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a>  q &lt;-<span class="st"> </span><span class="kw">ncol</span>(distrib<span class="fl">.6</span>raters)</span>
+<span id="cb5-2"><a href="#cb5-2"></a>  <span class="kw">gwet.ac1.dist</span>(distrib<span class="fl">.6</span>raters,<span class="dt">weights =</span> <span class="kw">quadratic.weights</span>(<span class="dv">1</span><span class="op">:</span>q))</span>
+<span id="cb5-3"><a href="#cb5-3"></a><span class="co">#&gt;   coeff.name     coeff    stderr      conf.int      p.value        pa</span></span>
+<span id="cb5-4"><a href="#cb5-4"></a><span class="co">#&gt; 1 Gwet&#39;s AC2 0.4837438 0.1058227 (0.257,0.711) 0.0004356618 0.8544444</span></span>
+<span id="cb5-5"><a href="#cb5-5"></a><span class="co">#&gt;          pe</span></span>
+<span id="cb5-6"><a href="#cb5-6"></a><span class="co">#&gt; 1 0.7180556</span></span>
+<span id="cb5-7"><a href="#cb5-7"></a>  <span class="kw">fleiss.kappa.dist</span>(distrib<span class="fl">.6</span>raters,<span class="dt">weights =</span> <span class="kw">quadratic.weights</span>(<span class="dv">1</span><span class="op">:</span>q))</span>
+<span id="cb5-8"><a href="#cb5-8"></a><span class="co">#&gt;      coeff.name     coeff    stderr       conf.int   p.value        pa</span></span>
+<span id="cb5-9"><a href="#cb5-9"></a><span class="co">#&gt; 1 Fleiss&#39; Kappa 0.2511909 0.1457381 (-0.061,0.564) 0.1067865 0.8544444</span></span>
+<span id="cb5-10"><a href="#cb5-10"></a><span class="co">#&gt;          pe</span></span>
+<span id="cb5-11"><a href="#cb5-11"></a><span class="co">#&gt; 1 0.8056173</span></span>
+<span id="cb5-12"><a href="#cb5-12"></a>  <span class="kw">krippen.alpha.dist</span>(distrib<span class="fl">.6</span>raters,<span class="dt">weights =</span> <span class="kw">quadratic.weights</span>(<span class="dv">1</span><span class="op">:</span>q))</span>
+<span id="cb5-13"><a href="#cb5-13"></a><span class="co">#&gt;             coeff.name    coeff   stderr       conf.int    p.value</span></span>
+<span id="cb5-14"><a href="#cb5-14"></a><span class="co">#&gt; 1 Krippendorff&#39;s Alpha 0.259511 0.133958 (-0.028,0.547) 0.07315748</span></span>
+<span id="cb5-15"><a href="#cb5-15"></a><span class="co">#&gt;          pa        pe</span></span>
+<span id="cb5-16"><a href="#cb5-16"></a><span class="co">#&gt; 1 0.8560617 0.8056173</span></span>
+<span id="cb5-17"><a href="#cb5-17"></a>  <span class="kw">bp.coeff.dist</span>(distrib<span class="fl">.6</span>raters,<span class="dt">weights =</span> <span class="kw">quadratic.weights</span>(<span class="dv">1</span><span class="op">:</span>q))</span>
+<span id="cb5-18"><a href="#cb5-18"></a><span class="co">#&gt;         coeff.name     coeff    stderr      conf.int     p.value        pa</span></span>
+<span id="cb5-19"><a href="#cb5-19"></a><span class="co">#&gt; 1 Brennan-Prediger 0.4177778 0.1067493 (0.189,0.647) 0.001559352 0.8544444</span></span>
+<span id="cb5-20"><a href="#cb5-20"></a><span class="co">#&gt;     pe</span></span>
+<span id="cb5-21"><a href="#cb5-21"></a><span class="co">#&gt; 1 0.75</span></span></code></pre></div>
 </div>
 </div>
 <div id="references" class="section level1">
 <h1>References:</h1>
 <ol style="list-style-type: decimal">
-<li>Gwet, K.L. (2014) <em>Handbook of Inter-Rater Reliability</em>, 4th Edition. Advanced Analytics, LLC.</li>
+<li>Gwet, K.L. (2014, <a href="https://www.amazon.com/Handbook-Inter-Rater-Reliability-Definitive-Measuring/dp/0970806280/">ISBN:978-0970806284</a>). “<em>Handbook of Inter-Rater Reliability</em>,” 4th Edition. Advanced Analytics, LLC</li>
 </ol>
 </div>
 
