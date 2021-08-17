@@ -11,7 +11,7 @@
 
 <meta name="author" content="Kilem L. Gwet, Ph.D." />
 
-<meta name="date" content="2021-08-15" />
+<meta name="date" content="2021-08-17" />
 
 <title>Calculating Chance-corrected Agreement Coefficients (CAC)</title>
 
@@ -167,7 +167,7 @@ pre code {
 
 <h1 class="title toc-ignore">Calculating Chance-corrected Agreement Coefficients (CAC)</h1>
 <h4 class="author">Kilem L. Gwet, Ph.D.</h4>
-<h4 class="date">2021-08-15</h4>
+<h4 class="date">2021-08-17</h4>
 
 </div>
 
@@ -293,6 +293,10 @@ bp.coeff.dist(distrib.6raters)
 #&gt; 
 #&gt; $categories
 #&gt; [1] 1 2 3 4 5
+#&gt; 
+#&gt; $obs
+#&gt;   Rater1 Rater2 Rater3 Rater4
+#&gt; 1      9     10     11     11
 gwet.ac1.raw(cac.raw4raters)
 #&gt; $est
 #&gt;   coeff.name        pa        pe coeff.val coeff.se  conf.int     p.value
@@ -310,6 +314,10 @@ gwet.ac1.raw(cac.raw4raters)
 #&gt; 
 #&gt; $categories
 #&gt; [1] 1 2 3 4 5
+#&gt; 
+#&gt; $obs
+#&gt;   Rater1 Rater2 Rater3 Rater4
+#&gt; 1      9     10     11     11
 fleiss.kappa.raw(cac.raw4raters)
 #&gt; $est
 #&gt;      coeff.name        pa        pe coeff.val coeff.se  conf.int     p.value
@@ -327,10 +335,14 @@ fleiss.kappa.raw(cac.raw4raters)
 #&gt; 
 #&gt; $categories
 #&gt; [1] 1 2 3 4 5
+#&gt; 
+#&gt; $obs
+#&gt;   Rater1 Rater2 Rater3 Rater4
+#&gt; 1      9     10     11     11
 krippen.alpha.raw(cac.raw4raters)
 #&gt; $est
 #&gt;             coeff.name    pa   pe coeff.val coeff.se  conf.int      p.value
-#&gt; 1 Krippendorff&#39;s Alpha 0.805 0.24   0.74342  0.14557 (0.419,1) 0.0004594257
+#&gt; 1 Krippendorff&#39;s Alpha 0.805 0.24   0.74342  0.14548 (0.423,1) 0.0003386245
 #&gt;       w.name
 #&gt; 1 unweighted
 #&gt; 
@@ -344,6 +356,10 @@ krippen.alpha.raw(cac.raw4raters)
 #&gt; 
 #&gt; $categories
 #&gt; [1] 1 2 3 4 5
+#&gt; 
+#&gt; $obs
+#&gt;   Rater1 Rater2 Rater3 Rater4
+#&gt; 1      9     10     11     11
 conger.kappa.raw(cac.raw4raters)
 #&gt; $est
 #&gt;       coeff.name        pa        pe coeff.val coeff.se  conf.int      p.value
@@ -361,6 +377,10 @@ conger.kappa.raw(cac.raw4raters)
 #&gt; 
 #&gt; $categories
 #&gt; [1] 1 2 3 4 5
+#&gt; 
+#&gt; $obs
+#&gt;   Rater1 Rater2 Rater3 Rater4
+#&gt; 1      9     10     11     11
 bp.coeff.raw(cac.raw4raters)
 #&gt; $est
 #&gt;         coeff.name        pa  pe coeff.val coeff.se  conf.int      p.value
@@ -377,7 +397,11 @@ bp.coeff.raw(cac.raw4raters)
 #&gt; [5,]    0    0    0    0    1
 #&gt; 
 #&gt; $categories
-#&gt; [1] 1 2 3 4 5</code></pre>
+#&gt; [1] 1 2 3 4 5
+#&gt; 
+#&gt; $obs
+#&gt;   Rater1 Rater2 Rater3 Rater4
+#&gt; 1      9     10     11     11</code></pre>
 <p>Most users of this package will only be interessted in the agreement coefficients and possibly in the related statistics such as the standard error and p-values. In this case, you should run these functions as follows (<span class="math inline">\(\mbox{AC}_1\)</span> is used here as an example. Feel free to experiment with the other coefficients):</p>
 <pre class="r"><code>ac1 &lt;- gwet.ac1.raw(cac.raw4raters)$est
 ac1
