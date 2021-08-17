@@ -1,0 +1,122 @@
+---
+title: "Calculating Chance-corrected Agreement Coefficients (CAC)"
+author: "Kilem L. Gwet, Ph.D."
+date: "`r Sys.Date()`"
+output: 
+  md_document:
+vignette: >
+  %\VignetteIndexEntry{Calculating Chance-corrected Agreement Coefficients (CAC)}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(irrCAC)
+```
+# Installation
+
+devtools::install_github("kgwet/irrCAC")
+
+# Abstract
+
+The **irrCAC** is an R package that provides several functions for calculating various chance-corrected agreement coefficients. This package closely follows the general framework of inter-rater reliability assessment presented by Gwet (2014). A similar package was developed for STATA users by Klein (2018).
+
+
+The functions included in this package can handle 3 types of input data: (1) the contingency table, (2) the distribution
+of raters by subject and by category, (3) the raw data, which is essentially a plain dataset where each row represents 
+a subject and each column, the ratings associated with one rater. The list of all datasets containined in this package can
+be listed as follows:
+
+```{r}
+  data(package="irrCAC")
+```
+
+# Computing Agreement Coefficients
+
+##  Computing agreement Coefficients from Contingency tables
+
+**cont3x3abstractors** is one of 2 datasets included in this package and that contain rating data from 2 raters organized in the form of a contingency table. The following r script shows how to compute Cohen's kappa, Scott's Pi, Gwet's $\mbox{AC}_1$, Brennan-Prediger, Krippendorff's alpha, and the percent agreement coefficients from this dataset.
+```{r}
+  cont3x3abstractors
+  kappa2.table(cont3x3abstractors)
+  scott2.table(cont3x3abstractors)
+  gwet.ac1.table(cont3x3abstractors)
+  bp2.table(cont3x3abstractors)
+  krippen2.table(cont3x3abstractors)
+  pa2.table(cont3x3abstractors)
+```
+Suppose that you only want to obtain Gwet's $\mbox{AC}_1$ coefficient, but don't care about the associated precision measures such as the standard error, confidence intervals or p-values. You can accomplish this as follows:  
+```{r} 
+  ac1 <- gwet.ac1.table(cont3x3abstractors)$coeff.val
+```
+Then use the variable ac1 to obtain $\mbox{AC}_1=`r round(ac1,3)`$.
+
+
+Another contingency table included in this package is named **cont3x3abstractors**.  You may use it to experiment with the r functions listed above.
+
+
+## Computing agreement coefficients from the distribution of raters by subject & category
+
+Included in this package is a small dataset named **distrib.6raters**, which contains the distribution of 6 raters by subject and category. Each row represents a subject (i.e.  a psychiatric patient) and the number of raters (i.e. psychiatrists) who classified it into each category used in the inter-rater reliability study. Here is the dataset and how it can be used to compute the various agreement coefficients:
+```{r}
+distrib.6raters
+gwet.ac1.dist(distrib.6raters)
+fleiss.kappa.dist(distrib.6raters)
+krippen.alpha.dist(distrib.6raters)
+bp.coeff.dist(distrib.6raters)
+```
+Once again, you can request a single value from these functions. To get only Krippendorff's alpha coefficient without it's precission measures, you may proceed as follows:
+```{r} 
+  alpha <- krippen.alpha.dist(distrib.6raters)$coeff
+```
+The newly-created alpha variable gives the coefficient $\alpha = `r alpha`$. 
+
+Two additional datasets that represent ratings in the form of a distribution of raters by subject and by category, are included in this package. These datasets are **cac.dist4cat** and **cac.dist4cat**. Note that these 2 datasets contain more columns than needed to run the 4 functions presented in this section. Therefore, the columns associated with the response categories must be extracted from the original datasets before running the functions. For example, computing Gwet's $\mbox{AC}_1$ coefficient using the **cac.dist4cat** dataset should be done as follows:
+```{r} 
+  ac1 <- gwet.ac1.dist(cac.dist4cat[,2:4])$coeff
+``` 
+
+Note that the input dataset supplied to the \emph{gwet.ac1.dist} function is **cac.dist4cat[,2:4]**. That is, only columns 2, 3, and 4 are extracted from the original datset and used as input data. We know from the value of the newly created variable \emph{ac1} that $\mbox{AC}_1=`r ac1`$.
+
+## Computing agreement coefficients from raw ratings
+
+One example dataset of raw ratings included in this package is **cac.raw4raters** and looks like this:
+```{r}
+  cac.raw4raters
+```
+As you can see, a dataset of raw ratings is merely a listing of ratings that the raters assigned to the subjects.  Each row is associated with a single subject.Typically, the same subject would be rated by all or some of the raters.  The dataset **cac.raw4raters** contains some missing ratings represented by the symbol NA, suggesting that some raters did not rate all subjects. As a matter of fact, in this particular case, no rater rated all subjects.  
+
+Here is you can compute the various agreement coefficients using the raw ratings:
+```{r}
+pa.coeff.raw(cac.raw4raters)
+gwet.ac1.raw(cac.raw4raters)
+fleiss.kappa.raw(cac.raw4raters)
+krippen.alpha.raw(cac.raw4raters)
+conger.kappa.raw(cac.raw4raters)
+bp.coeff.raw(cac.raw4raters)
+```
+Most users of this package will only be interessted in the agreement coefficients and possibly in the related statistics such as the standard error and p-values.  In this case, you should run these functions as follows ($\mbox{AC}_1$ is used here as an example. Feel free to experiment with the other coefficients):
+
+```{r}
+ac1 <- gwet.ac1.raw(cac.raw4raters)$est
+ac1
+```
+You can even request only the $\mbox{AC}_1$ coefficient estimate `r ac1$coeff.val`.  You will then proceed as follows:
+```{r}
+ac1 <- gwet.ac1.raw(cac.raw4raters)$est
+ac1$coeff.val
+```
+
+
+
+
+# References:
+1. Gwet, K.L. (2014, [ISBN:978-0970806284](https://www.amazon.com/Handbook-Inter-Rater-Reliability-Definitive-Measuring/dp/0970806280/)). "*Handbook of Inter-Rater Reliability*," 4th Edition. Advanced Analytics, LLC
+1. Klein, D. (2018) doi:<https://doi.org/10.1177/1536867X1801800408>. "Implementing a general framework for assessing interrater agreement in Stata," *The Stata Journal* Volume 18, Number 4, pp. 871-901.

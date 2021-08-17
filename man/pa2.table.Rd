@@ -15,7 +15,7 @@ pa2.table(
 \item{ratings}{A square table of ratings (assume no missing ratings).}
 
 \item{weights}{An optional matrix that contains the weights used in the weighted analysis. By default, this 
-parameter contaings the identity weight matrix, which leads to the unweighted analysis.}
+parameter contains the identity weight matrix, which leads to the unweighted analysis.}
 
 \item{conflev}{An optional parameter that specifies the confidence level used for constructing confidence 
 intervals. By default the function assumes the standard value of 95\%.}

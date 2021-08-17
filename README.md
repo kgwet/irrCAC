@@ -187,6 +187,10 @@ ratings:
     #> 
     #> $categories
     #> [1] 1 2 3 4 5
+    #> 
+    #> $obs
+    #>   Rater1 Rater2 Rater3 Rater4
+    #> 1      9     10     11     11
     gwet.ac1.raw(cac.raw4raters)
     #> $est
     #>   coeff.name        pa        pe coeff.val coeff.se  conf.int     p.value
@@ -204,6 +208,10 @@ ratings:
     #> 
     #> $categories
     #> [1] 1 2 3 4 5
+    #> 
+    #> $obs
+    #>   Rater1 Rater2 Rater3 Rater4
+    #> 1      9     10     11     11
     fleiss.kappa.raw(cac.raw4raters)
     #> $est
     #>      coeff.name        pa        pe coeff.val coeff.se  conf.int     p.value
@@ -221,10 +229,14 @@ ratings:
     #> 
     #> $categories
     #> [1] 1 2 3 4 5
+    #> 
+    #> $obs
+    #>   Rater1 Rater2 Rater3 Rater4
+    #> 1      9     10     11     11
     krippen.alpha.raw(cac.raw4raters)
     #> $est
     #>             coeff.name    pa   pe coeff.val coeff.se  conf.int      p.value
-    #> 1 Krippendorff's Alpha 0.805 0.24   0.74342  0.14557 (0.419,1) 0.0004594257
+    #> 1 Krippendorff's Alpha 0.805 0.24   0.74342  0.14548 (0.423,1) 0.0003386245
     #>       w.name
     #> 1 unweighted
     #> 
@@ -238,6 +250,10 @@ ratings:
     #> 
     #> $categories
     #> [1] 1 2 3 4 5
+    #> 
+    #> $obs
+    #>   Rater1 Rater2 Rater3 Rater4
+    #> 1      9     10     11     11
     conger.kappa.raw(cac.raw4raters)
     #> $est
     #>       coeff.name        pa        pe coeff.val coeff.se  conf.int      p.value
@@ -255,6 +271,10 @@ ratings:
     #> 
     #> $categories
     #> [1] 1 2 3 4 5
+    #> 
+    #> $obs
+    #>   Rater1 Rater2 Rater3 Rater4
+    #> 1      9     10     11     11
     bp.coeff.raw(cac.raw4raters)
     #> $est
     #>         coeff.name        pa  pe coeff.val coeff.se  conf.int      p.value
@@ -272,6 +292,10 @@ ratings:
     #> 
     #> $categories
     #> [1] 1 2 3 4 5
+    #> 
+    #> $obs
+    #>   Rater1 Rater2 Rater3 Rater4
+    #> 1      9     10     11     11
 
 Most users of this package will only be interessted in the agreement
 coefficients and possibly in the related statistics such as the standard
