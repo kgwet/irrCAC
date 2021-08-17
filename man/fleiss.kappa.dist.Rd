@@ -7,8 +7,13 @@
 Fleiss, J. L. (1981). \emph{Statistical Methods for Rates and Proportions}. John Wiley & Sons.
 }
 \usage{
-fleiss.kappa.dist(ratings, weights = "unweighted", categ = NULL,
-  conflev = 0.95, N = Inf)
+fleiss.kappa.dist(
+  ratings,
+  weights = "unweighted",
+  categ = NULL,
+  conflev = 0.95,
+  N = Inf
+)
 }
 \arguments{
 \item{ratings}{An \emph{nxq} matrix / data frame containing the distribution of raters by subject and category. Each cell \emph{(i,k)} contains the number of raters who classsified subject \emph{i} into category \emph{k}.}
@@ -34,4 +39,15 @@ p.value(the p-value of Fleiss' coefficient),coeff.name ("Fleiss").
 }
 \description{
 Fleiss' agreement coefficient among multiple raters (2, 3, +) when the input dataset is the distribution of raters by subject and category.
+}
+\examples{
+#The dataset "distrib.6raters" comes with this package. It represents the distribution of 6 raters 
+#by subject and by category. Note that each row of this dataset sums to the number of raters, which
+#is 6. You may this dataset as follows:
+distrib.6raters
+fleiss.kappa.dist(distrib.6raters) #Fleiss' kappa, precision measures, weights & list of categories
+fleiss <- fleiss.kappa.dist(distrib.6raters)$coeff #Yields Fleiss' kappa alone.
+fleiss
+q <- ncol(distrib.6raters) #Number of categories
+fleiss.kappa.dist(distrib.6raters,weights = quadratic.weights(1:q)) #Weighted fleiss/quadratic wts
 }

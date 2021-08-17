@@ -4,8 +4,12 @@
 \alias{gwet.ac1.table}
 \title{Gwet's AC1/AC2 coefficient for 2 raters}
 \usage{
-gwet.ac1.table(ratings, weights = identity.weights(1:ncol(ratings)),
-  conflev = 0.95, N = Inf)
+gwet.ac1.table(
+  ratings,
+  weights = identity.weights(1:ncol(ratings)),
+  conflev = 0.95,
+  N = Inf
+)
 }
 \arguments{
 \item{ratings}{A square table of ratings (assume no missing ratings).}
@@ -24,4 +28,12 @@ A data frame containing the following 5 variables: coeff.name coeff.val coeff.se
 }
 \description{
 Gwet's AC1/AC2 coefficient for 2 raters
+}
+\examples{
+#The dataset "cont3x3abstractors" comes with this package. Analyze it as follows:
+gwet.ac1.table(cont3x3abstractors) #Yields AC1 along with precision measures
+ac1 <- gwet.ac1.table(cont3x3abstractors)$coeff.val #Yields AC1 coefficient alone.
+ac1
+q <- nrow(cont3x3abstractors) #Number of categories
+gwet.ac1.table(cont3x3abstractors,weights = quadratic.weights(1:q)) #AC2 with quadratic weights
 }

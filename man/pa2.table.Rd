@@ -4,8 +4,12 @@
 \alias{pa2.table}
 \title{Percent Agreement coefficient for 2 raters}
 \usage{
-pa2.table(ratings, weights = identity.weights(1:ncol(ratings)),
-  conflev = 0.95, N = Inf)
+pa2.table(
+  ratings,
+  weights = identity.weights(1:ncol(ratings)),
+  conflev = 0.95,
+  N = Inf
+)
 }
 \arguments{
 \item{ratings}{A square table of ratings (assume no missing ratings).}
@@ -24,4 +28,12 @@ A data frame containing the following 5 variables: coeff.name coeff.val coeff.se
 }
 \description{
 Percent Agreement coefficient for 2 raters
+}
+\examples{
+#The dataset "cont3x3abstractors" comes with this package. Analyze it as follows:
+pa2.table(cont3x3abstractors) #Yields percent agreement along with precision measures
+pa <- pa2.table(cont3x3abstractors)$coeff.val #Yields percent agreement alone.
+pa
+q <- nrow(cont3x3abstractors) #Number of categories
+pa2.table(cont3x3abstractors,weights = quadratic.weights(1:q)) #Weighted percent agreement
 }

@@ -4,8 +4,12 @@
 \alias{bp2.table}
 \title{Brenann-Prediger coefficient for 2 raters}
 \usage{
-bp2.table(ratings, weights = identity.weights(1:ncol(ratings)),
-  conflev = 0.95, N = Inf)
+bp2.table(
+  ratings,
+  weights = identity.weights(1:ncol(ratings)),
+  conflev = 0.95,
+  N = Inf
+)
 }
 \arguments{
 \item{ratings}{A square table of ratings (assume no missing ratings).}
@@ -24,4 +28,12 @@ A data frame containing the following 5 variables: coeff.name coeff.val coeff.se
 }
 \description{
 Brenann-Prediger coefficient for 2 raters
+}
+\examples{
+#The dataset "cont3x3abstractors" comes with this package. Analyze it as follows:
+bp2.table(cont3x3abstractors) #Yields Brennan-Prediger's coefficient along with precision measures
+bp <- bp2.table(cont3x3abstractors)$coeff.val #Yields Brennan-Prediger coefficient alone.
+bp
+q <- nrow(cont3x3abstractors) #Number of categories
+bp2.table(cont3x3abstractors,weights = quadratic.weights(1:q)) #Weighted BP coefficient
 }

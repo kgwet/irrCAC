@@ -1,0 +1,61 @@
+---
+title: "irrCAC-benchmarking"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{irrCAC-benchmarking}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(irrCAC)
+```
+
+# Abstract
+
+The **irrCAC** is an R package that provides several functions for calculating various chance-corrected agreement coefficients (see [overview.html](overview.html) for ageneral overview), their weighted versions using various weights (see [weighting.html](weighting.html) for a more detailed discusssion on the weighting of agreement coefficients). In this document, I like to show you how you would implement the benchmarking approach discussed in chapter 6 of Gwet (2014). This package closely follows the general framework of inter-rater reliability assessment presented by Gwet (2014).
+
+In a nutshell, the problem consists of qualifying the magnitude of a given agreement coeffficient as *poor*, *good*, *very good*, or something else.  There are essentially 3 bechmarking scales that have been mentioned in the inter-rater reliability, and which are covered in this package. These are the **Landis-Koch**, **Altman**, and **Fleiss** bechmarking scales defined as follows:
+```{r}
+landis.koch
+altman
+fleiss
+```
+These are data frames that become available to you as soon as you you install the irrCAC package.  
+
+#
+# Interpreting the magnitude of agreement coeeficients
+
+Suppose that you computed Gwet's $\mbox{AC}_1$ coefficient using raw ratings from the dataset **cac.raw4raters**. You now want to qualify the magnitude of this coefficient using one of the benchmarking scales. Although you would normally choose one of the 3 benchmarking scales, I will use all 3 for illustration purposes.  You would proceed as follows:
+```{r}
+  ac1 <- gwet.ac1.raw(cac.raw4raters)$est
+  data.frame(ac1$coeff.val, ac1$coeff.se)
+  landis.koch.bf(ac1$coeff.val, ac1$coeff.se)
+  altman.bf(ac1$coeff.val, ac1$coeff.se)
+  fleiss.bf(ac1$coeff.val, ac1$coeff.se)
+```
+Each of the functions *landis.koch.bf(ac1\$coeff.val, ac1\$coeff.se)*, *altman.bf(ac1\$coeff.val, ac1\$coeff.se)*, and *fleiss.bf(ac1\$coeff.val, ac1\$coeff.se)* produces 2 columns: the agreement strength level, and the associated cumulative membership probability (*CumProb*). *CumProb* represents the probability that the true agreement strength level is the one associated with the probability or one that is better. I recommended in Gwet (2014) to retain an agreement strength level that is associated with *ComProb* that exceeds 0.95. 
+* Landis-Koch Scale
+  Since $\mbox{AC}_1=0.775$ then according to the Landoch-Koch benchmarking scale, this 
+  agreement coefficient is deemed *Moderate* since the associated *CumProb* exceeds the 
+  thereshold of 0.95. It cannot be qualified as *substantial* due to its standard error 
+  of 0.14295 being high. See chapter 4 of Gwet (2014) for a more detailed discussion on this topic. 
+  
+* Altman Scale
+  According to Altman's benchmarking scale, the $\mbox{AC}_1$ agreement coefficient of 0.775 is
+  *Moderate* as well. 
+  
+* Fleiss Scale
+  According to Fleiss' benchmarking scale, the $\mbox{AC}_1$ agreement coefficient of 0.775 is
+  *Intermediate to Good*. 
+
+#
+# References:
+1. Gwet, K.L. (2014, [ISBN:978-0970806284](https://www.amazon.com/Handbook-Inter-Rater-Reliability-Definitive-Measuring/dp/0970806280/)). "*Handbook of Inter-Rater Reliability*," 4th Edition. Advanced Analytics, LLC

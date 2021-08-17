@@ -4,12 +4,14 @@
 \name{altman}
 \alias{altman}
 \title{Dataset describing the Altman's Benchmarking Scale}
-\format{Each row of this dataset describes an interval and the interpretation of the magnitude it represents.
+\format{
+Each row of this dataset describes an interval and the interpretation of the magnitude it represents.
  \describe{
     \item{lb.AL}{The interval lower bound}
     \item{ub.AL}{The interval upper bound}
     \item{interp.AL}{The interpretation}
- }}
+ }
+}
 \source{
 Altman, D.G. (1991). \emph{Practical Statistics for Medical Research}. Chapman and Hall.
 }

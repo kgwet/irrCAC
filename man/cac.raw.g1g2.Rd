@@ -4,7 +4,8 @@
 \name{cac.raw.g1g2}
 \alias{cac.raw.g1g2}
 \title{Dataset of raw ratings from 4 Raters on 14 Subjects that belong to 2 groups named "G1" and "G2"}
-\format{This dataset contains ratings obtained from an experiment where 4 raters classified 14 subjects into 5 
+\format{
+This dataset contains ratings obtained from an experiment where 4 raters classified 14 subjects into 5 
 possible categories labeled as a, b, c, d, and e. None of the 4 raters scored all 14 units. Therefore, 
 some missing ratings appear in each of the columns associated with the 4 raters.
 
@@ -17,7 +18,8 @@ columns only play a descriptive role and are not used in any calculation.
     \item{Rater2}{All ratings from rater 2}
     \item{Rater3}{All ratings from rater 3}
     \item{Rater4}{All ratings from rater 4}
- }}
+ }
+}
 \usage{
 cac.raw.g1g2
 }

@@ -4,8 +4,13 @@
 \alias{krippen.alpha.raw}
 \title{Krippendorff's alpha coefficient for an arbitrary number of raters (2, 3, +) when the input data represent the raw ratings reported for each subject and each rater.}
 \usage{
-krippen.alpha.raw(ratings, weights = "unweighted", categ.labels = NULL,
-  conflev = 0.95, N = Inf)
+krippen.alpha.raw(
+  ratings,
+  weights = "unweighted",
+  categ.labels = NULL,
+  conflev = 0.95,
+  N = Inf
+)
 }
 \arguments{
 \item{ratings}{An nxr matrix / data frame of ratings where each column represents one rater and each row one subject.}
@@ -38,6 +43,15 @@ name), "pa" (the percent agreement), "pe" (the percent chance agreement), coeff.
 }
 \description{
 Krippendorff's alpha coefficient for an arbitrary number of raters (2, 3, +) when the input data represent the raw ratings reported for each subject and each rater.
+}
+\examples{
+#The dataset "cac.raw4raters" comes with this package. Analyze it as follows:
+cac.raw4raters
+krippen.alpha.raw(cac.raw4raters) #Alpha coeff. , precision measures, weights & categories
+krippen.alpha.raw(cac.raw4raters)$est #Krippendorff's alpha with precision measures
+alpha <- krippen.alpha.raw(cac.raw4raters)$est$coeff.val #Krippendorff's alpha alone.
+alpha
+krippen.alpha.raw(cac.raw4raters, weights = "quadratic") #weighted alpha/ quadratic wts
 }
 \references{
 Gwet, K. (2014). \emph{Handbook of Inter-Rater Reliability: The Definitive Guide to Measuring the Extent of Agreement Among Multiple Raters}, 4th Edition.  Advanced Analytics, LLC.\cr\cr

@@ -4,7 +4,8 @@
 \name{cac.raw4raters}
 \alias{cac.raw4raters}
 \title{Rating Data from 4 Raters and 12 Subjects.}
-\format{This dataset contains ratings obtained from an experiment where 4 raters classified 12 subjects into 5 
+\format{
+This dataset contains ratings obtained from an experiment where 4 raters classified 12 subjects into 5 
 possible categories labeled as 1, 2, 3, 4, and 5. None of the 4 raters scored all 12 units. Therefore, 
 some missing ratings in the form of "NA" appear in each of the columns associated with the 4 raters.
 
@@ -16,7 +17,8 @@ column only plays a descriptive role and is not used in any calculation.
     \item{Rater2}{All ratings from rater 2}
     \item{Rater3}{All ratings from rater 3}
     \item{Rater4}{All ratings from rater 4}
- }}
+ }
+}
 \source{
 Gwet, K.L. (2014) \emph{Handbook of Inter-Rater Reliability}, 4th Edition, page #120. Advanced Analytics, LLC.
 }

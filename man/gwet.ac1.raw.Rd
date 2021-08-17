@@ -4,8 +4,13 @@
 \alias{gwet.ac1.raw}
 \title{Gwet's AC1/AC2 agreement coefficient among multiple raters (2, 3, +) when the input data represent the raw ratings reported for each subject and each rater.}
 \usage{
-gwet.ac1.raw(ratings, weights = "unweighted", categ.labels = NULL,
-  conflev = 0.95, N = Inf)
+gwet.ac1.raw(
+  ratings,
+  weights = "unweighted",
+  categ.labels = NULL,
+  conflev = 0.95,
+  N = Inf
+)
 }
 \arguments{
 \item{ratings}{An nxr matrix / data frame of ratings where each column represents one rater and each row one subject.}
@@ -38,6 +43,15 @@ estimate-AC1 or AC2), "coeff.se" (the standard error), "conf.int" (AC1/AC2 confi
 }
 \description{
 Gwet's AC1/AC2 agreement coefficient among multiple raters (2, 3, +) when the input data represent the raw ratings reported for each subject and each rater.
+}
+\examples{
+#The dataset "cac.raw4raters" comes with this package. Analyze it as follows:
+cac.raw4raters
+gwet.ac1.raw(cac.raw4raters) #AC1 coefficient, precision measures, weights & categories
+gwet.ac1.raw(cac.raw4raters)$est #Yields AC1 coefficient with precision measures
+ac1 <- gwet.ac1.raw(cac.raw4raters)$est$coeff.val #Yields AC1 coefficient alone.
+ac1
+gwet.ac1.raw(cac.raw4raters, weights = "quadratic") #AC2 coefficient with quadratic wts
 }
 \references{
 Gwet, K. L. (2008). ``Computing inter-rater reliability and its variance in the presence of high

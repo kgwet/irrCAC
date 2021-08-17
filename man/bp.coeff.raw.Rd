@@ -2,10 +2,15 @@
 % Please edit documentation in R/agree.coeff3.raw.r
 \name{bp.coeff.raw}
 \alias{bp.coeff.raw}
-\title{Brennan \& Prediger's agreement coefficient for an arbitrary number of raters (2, 3, +) when the input data represent the raw ratings reported for each subject and each rater.}
+\title{Brennan \& Prediger's (BP) agreement coefficient for an arbitrary number of raters (2, 3, +) when the input data represent the raw ratings reported for each subject and each rater.}
 \usage{
-bp.coeff.raw(ratings, weights = "unweighted", categ.labels = NULL,
-  conflev = 0.95, N = Inf)
+bp.coeff.raw(
+  ratings,
+  weights = "unweighted",
+  categ.labels = NULL,
+  conflev = 0.95,
+  N = Inf
+)
 }
 \arguments{
 \item{ratings}{An nxr matrix / data frame of ratings where each column represents one rater and each row one subject.}
@@ -38,7 +43,16 @@ agreement), coeff.val (Brennan-Prediger coefficient estimate), "coeff.se" (stand
 "p.value"(Brennan-Prediger coefficient's p-value), "w.name"(the weights' identification).
 }
 \description{
-Brennan \& Prediger's agreement coefficient for an arbitrary number of raters (2, 3, +) when the input data represent the raw ratings reported for each subject and each rater.
+Brennan \& Prediger's (BP) agreement coefficient for an arbitrary number of raters (2, 3, +) when the input data represent the raw ratings reported for each subject and each rater.
+}
+\examples{
+#The dataset "cac.raw4raters" comes with this package. Analyze it as follows:
+cac.raw4raters
+bp.coeff.raw(cac.raw4raters) #BP coefficient, precision measures, weights & categories
+bp.coeff.raw(cac.raw4raters)$est #Brennan-Prediger coefficient with precision measures
+bp <- bp.coeff.raw(cac.raw4raters)$est$coeff.val #Yields Brennan-Prediger coefficient alone.
+bp
+bp.coeff.raw(cac.raw4raters, weights = "quadratic") #weighted Brennan-Prediger coefficient
 }
 \references{
 Brennan, R.L., \& Prediger, D. J. (1981). ``Coefficient Kappa: some uses, misuses, and alternatives." \emph{Educational and Psychological Measurement}, 41, 687-699.

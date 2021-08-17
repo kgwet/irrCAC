@@ -4,8 +4,13 @@
 \alias{fleiss.kappa.raw}
 \title{Fleiss' generalized kappa among multiple raters (2, 3, +) when the input data represent the raw ratings reported for each subject and each rater.}
 \usage{
-fleiss.kappa.raw(ratings, weights = "unweighted", categ.labels = NULL,
-  conflev = 0.95, N = Inf)
+fleiss.kappa.raw(
+  ratings,
+  weights = "unweighted",
+  categ.labels = NULL,
+  conflev = 0.95,
+  N = Inf
+)
 }
 \arguments{
 \item{ratings}{An nxr matrix / data frame of ratings where each column represents one rater and each row one subject.}
@@ -38,6 +43,15 @@ interval), "p.value"(Fleiss Kappa's p-value), "w.name"(the weights' identificati
 }
 \description{
 Fleiss' generalized kappa among multiple raters (2, 3, +) when the input data represent the raw ratings reported for each subject and each rater.
+}
+\examples{
+#The dataset "cac.raw4raters" comes with this package. Analyze it as follows:
+cac.raw4raters
+fleiss.kappa.raw(cac.raw4raters) #Fleiss' kappa, precision measures, weights & categories
+fleiss.kappa.raw(cac.raw4raters)$est #Yields Fleiss' kappa with precision measures
+fleiss <- fleiss.kappa.raw(cac.raw4raters)$est$coeff.val #Yields Fleiss' kappa alone.
+fleiss
+fleiss.kappa.raw(cac.raw4raters, weights = "quadratic") #weighted Fleiss' kappa/quadratic wts
 }
 \references{
 Fleiss, J. L. (1981). \emph{Statistical Methods for Rates and Proportions}. John Wiley \& Sons.

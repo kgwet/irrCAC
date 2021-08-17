@@ -4,14 +4,16 @@
 \name{cont3x3abstractors}
 \alias{cont3x3abstractors}
 \title{Distribution of 100 pregnant women by pregnancy type and by abstractor.}
-\format{Each row of this dataset describes an interval and the interpretation of the magnitude it represents.
+\format{
+Each row of this dataset describes an interval and the interpretation of the magnitude it represents.
  \describe{
     \item{Type}{Pregnancy Type.  This variable is shown here for information only and is never used by any function 
                 in the irrCAC package.}
     \item{Ectopic}{Ectopic Pregnancy}
     \item{AIU}{Abnormal Intrauterine Pregnancy}
     \item{NIU}{Normal Intrauterine Pregnancy}
- }}
+ }
+}
 \source{
 Gwet, K.L. (2014). \emph{Handbook of Inter-Rater Reliability}, 4th Edition. Advanced Analytics, LLC.
 }

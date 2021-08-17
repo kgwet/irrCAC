@@ -4,8 +4,13 @@
 \alias{conger.kappa.raw}
 \title{Conger's generalized kappa coefficient for an arbitrary number of raters (2, 3, +) when the input data represent the raw ratings reported for each subject and each rater.}
 \usage{
-conger.kappa.raw(ratings, weights = "unweighted", categ.labels = NULL,
-  conflev = 0.95, N = Inf)
+conger.kappa.raw(
+  ratings,
+  weights = "unweighted",
+  categ.labels = NULL,
+  conflev = 0.95,
+  N = Inf
+)
 }
 \arguments{
 \item{ratings}{An nxr matrix / data frame of ratings where each column represents one rater and each row one subject.}
@@ -37,6 +42,15 @@ interval), "p.value"(agreement coefficient's p-value), "w.name"(the weights' ide
 }
 \description{
 Conger's generalized kappa coefficient for an arbitrary number of raters (2, 3, +) when the input data represent the raw ratings reported for each subject and each rater.
+}
+\examples{
+#The dataset "cac.raw4raters" comes with this package. Analyze it as follows:
+cac.raw4raters
+conger.kappa.raw(cac.raw4raters) #Conger's kappa, precision stats, weights & categories
+conger.kappa.raw(cac.raw4raters)$est #Conger's kappa with precision measures
+conger <- conger.kappa.raw(cac.raw4raters)$est$coeff.val #Yields Conger's kappa alone.
+conger
+conger.kappa.raw(cac.raw4raters, weights = "quadratic") #weighted Conger's kappa
 }
 \references{
 Conger, A. J. (1980), ``Integration and Generalization of Kappas for Multiple Raters," \emph{Psychological Bulletin}, 88, 322-328.

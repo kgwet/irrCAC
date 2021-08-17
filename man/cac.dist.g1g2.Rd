@@ -4,7 +4,8 @@
 \name{cac.dist.g1g2}
 \alias{cac.dist.g1g2}
 \title{Distribution of 4 raters by subject and by category, for 14 Subjects that belong to 2 groups "G1" and "G2"}
-\format{This dataset contains ratings obtained from an experiment where 4 raters classified 14 subjects into 5 
+\format{
+This dataset contains ratings obtained from an experiment where 4 raters classified 14 subjects into 5 
 possible categories labeled as a, b, c, d, and e. None of the 4 raters scored all 14 units. Therefore, 
 some missing ratings appear in each of the columns associated with the 4 raters.
 
@@ -18,7 +19,8 @@ columns only play a descriptive role and are not used in any calculation.
     \item{c}{Number of raters who classified the subject represented by the row into category "c"}
     \item{d}{Number of raters who classified the subject represented by the row into category "d"}
     \item{e}{Number of raters who classified the subject represented by the row into category "e"}
- }}
+ }
+}
 \usage{
 cac.dist.g1g2
 }

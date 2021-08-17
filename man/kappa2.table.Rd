@@ -4,11 +4,16 @@
 \alias{kappa2.table}
 \title{Kappa coefficient for 2 raters}
 \usage{
-kappa2.table(ratings, weights = identity.weights(1:ncol(ratings)),
-  conflev = 0.95, N = Inf)
+kappa2.table(
+  ratings,
+  weights = identity.weights(1:ncol(ratings)),
+  conflev = 0.95,
+  N = Inf
+)
 }
 \arguments{
-\item{ratings}{A square table of ratings (assume no missing ratings).}
+\item{ratings}{A square or contingency table of ratings (assume no missing ratings). See the 2 datasets 
+"cont3x3abstractors" and "cont4x4diagnosis" that come with this package as examples.}
 
 \item{weights}{An optional matrix that contains the weights used in the weighted analysis.}
 
@@ -21,4 +26,12 @@ A data frame containing the following 5 variables: coeff.name coeff.val coeff.se
 }
 \description{
 Kappa coefficient for 2 raters
+}
+\examples{
+#The dataset "cont3x3abstractors" comes with this package. Analyze it as follows:
+kappa2.table(cont3x3abstractors) #Yields Cohen's kappa along with precision measures
+kappa <- kappa2.table(cont3x3abstractors)$coeff.val #Yields Cohen's kappa alone.
+kappa
+q <- nrow(cont3x3abstractors) #Number of categories
+kappa2.table(cont3x3abstractors,weights = quadratic.weights(1:q))#weighted kappa/quadratic wts
 }

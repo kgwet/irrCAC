@@ -1,0 +1,7 @@
+summarise(as.data.frame(a),across(Rater1:Rater4,sum))
+
+dplyr::summarise(as.data.frame(1-is.na(x.raw10x4[,2:5])),across(1:4,sum))
+
+pa.coeff.raw(x.raw10x4[,2:5])
+pa.coeff.raw(x.raw12x4[,2:5],weights = "ordinal")
+krippen.alpha.raw(x.raw12x4[,2:5])

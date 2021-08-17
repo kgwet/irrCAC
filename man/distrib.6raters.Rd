@@ -4,7 +4,8 @@
 \name{distrib.6raters}
 \alias{distrib.6raters}
 \title{Distribution of 6 psychiatrists by Subject/patient and diagnosis Category.}
-\format{This dataset has 15 rows (for the 15 subjects) and 7 columns. Only the last 6 columns representing the
+\format{
+This dataset has 15 rows (for the 15 subjects) and 7 columns. Only the last 6 columns representing the
 categories into which subjects are classified are used in the calculations.    
  \describe{
     \item{Subject}{This variable repsents the subject number.}
@@ -12,7 +13,8 @@ categories into which subjects are classified are used in the calculations.
     \item{Schizophrenia}{Schizophrenia Category}
     \item{Neurosis}{Neurosis category}
     \item{Other}{"Other" category}
- }}
+ }
+}
 \source{
 Fleiss, J. L. (1971). Measuring nominal scale agreement among many raters, \emph{Psychological Bulletin}, 76, 
 378-382.

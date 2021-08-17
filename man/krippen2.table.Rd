@@ -4,8 +4,12 @@
 \alias{krippen2.table}
 \title{Krippendorff's Alpha coefficient for 2 raters}
 \usage{
-krippen2.table(ratings, weights = identity.weights(1:ncol(ratings)),
-  conflev = 0.95, N = Inf)
+krippen2.table(
+  ratings,
+  weights = identity.weights(1:ncol(ratings)),
+  conflev = 0.95,
+  N = Inf
+)
 }
 \arguments{
 \item{ratings}{A square table of ratings (assume no missing ratings).}
@@ -24,4 +28,12 @@ A data frame containing the following 5 variables: coeff.name coeff.val coeff.se
 }
 \description{
 Krippendorff's Alpha coefficient for 2 raters
+}
+\examples{
+#The dataset "cont3x3abstractors" comes with this package. Analyze it as follows:
+krippen2.table(cont3x3abstractors) #Krippendorff's alpha along with precision measures
+alpha <- krippen2.table(cont3x3abstractors)$coeff.val #Krippendorff's alpha alone.
+alpha
+q <- nrow(cont3x3abstractors) #Number of categories
+krippen2.table(cont3x3abstractors,weights = quadratic.weights(1:q)) #Weighted alpha coefficient
 }

@@ -4,8 +4,12 @@
 \alias{scott2.table}
 \title{Scott's coefficient for 2 raters}
 \usage{
-scott2.table(ratings, weights = identity.weights(1:ncol(ratings)),
-  conflev = 0.95, N = Inf)
+scott2.table(
+  ratings,
+  weights = identity.weights(1:ncol(ratings)),
+  conflev = 0.95,
+  N = Inf
+)
 }
 \arguments{
 \item{ratings}{A square table of ratings (assume no missing ratings).}
@@ -21,4 +25,12 @@ A data frame containing the following 5 variables: coeff.name coeff.val coeff.se
 }
 \description{
 Scott's coefficient for 2 raters
+}
+\examples{
+#The dataset "cont3x3abstractors" comes with this package. Analyze it as follows:
+scott2.table(cont3x3abstractors) #Yields Scott's Pi coefficient along with precision measures
+scott <- scott2.table(cont3x3abstractors)$coeff.val #Yields Scott's coefficient alone.
+scott
+q <- nrow(cont3x3abstractors) #Number of categories
+scott2.table(cont3x3abstractors,weights = quadratic.weights(1:q)) #weighted Scott's coefficient
 }

@@ -4,7 +4,8 @@
 \name{cac.ben.gerry}
 \alias{cac.ben.gerry}
 \title{Ratings of 12 units from 2 raters named Ben and Gerry}
-\format{Each row of this dataset describes an interval and the interpretation of the magnitude it represents.
+\format{
+Each row of this dataset describes an interval and the interpretation of the magnitude it represents.
  \describe{
     \item{Group}{Group Name}
     \item{Units}{Unit number}
@@ -13,7 +14,8 @@
  }   
 The first 2 columns "Group" and "Units" play a descriptive role here and are not used by any fucntion included in this
 package. One will typically use cac.ben.gerry[,c(3,4)] or cac.ben.gerry[,c("Ben","Gerry")] as input 
-dataset.}
+dataset.
+}
 \usage{
 cac.ben.gerry
 }

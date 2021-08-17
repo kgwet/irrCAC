@@ -4,8 +4,13 @@
 \alias{pa.coeff.raw}
 \title{Percent agreement among multiple raters (2, 3, +) when the input data represent the raw ratings reported for each subject and each rater.}
 \usage{
-pa.coeff.raw(ratings, weights = "unweighted", categ.labels = NULL,
-  conflev = 0.95, N = Inf)
+pa.coeff.raw(
+  ratings,
+  weights = "unweighted",
+  categ.labels = NULL,
+  conflev = 0.95,
+  N = Inf
+)
 }
 \arguments{
 \item{ratings}{An nxr matrix / data frame of ratings where each column represents one rater and each row one subject.}
@@ -36,4 +41,13 @@ following variables "coeff.name" (coefficient name), "pa" (the percent agreement
 }
 \description{
 Percent agreement among multiple raters (2, 3, +) when the input data represent the raw ratings reported for each subject and each rater.
+}
+\examples{
+#The dataset "cac.raw4raters" comes with this package. Analyze it as follows:
+cac.raw4raters
+pa.coeff.raw(cac.raw4raters) #Percent agreement, precision measures, weights & categories
+pa.coeff.raw(cac.raw4raters)$est #Yields percent agreement with precision measures
+pa <- pa.coeff.raw(cac.raw4raters)$est$coeff.val #Yields percent agreement alone.
+pa
+pa.coeff.raw(cac.raw4raters, weights = "quadratic") #weighted percent agreement/quadratic weights
 }

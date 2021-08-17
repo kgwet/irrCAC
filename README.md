@@ -1,12 +1,10 @@
     library(irrCAC)
 
-Installation
-============
+# Installation
 
 devtools::install\_github(“kgwet/irrCAC”)
 
-Abstract
-========
+# Abstract
 
 The **irrCAC** is an R package that provides several functions for
 calculating various chance-corrected agreement coefficients. This
@@ -23,11 +21,9 @@ package can be listed as follows:
 
       data(package="irrCAC")
 
-Computing Agreement Coefficients
-================================
+# Computing Agreement Coefficients
 
-Computing agreement Coefficients from Contingency tables
---------------------------------------------------------
+## Computing agreement Coefficients from Contingency tables
 
 **cont3x3abstractors** is one of 2 datasets included in this package and
 that contain rating data from 2 raters organized in the form of a
@@ -73,8 +69,7 @@ Another contingency table included in this package is named
 **cont3x3abstractors**. You may use it to experiment with the r
 functions listed above.
 
-Computing agreement coefficients from the distribution of raters by subject & category
---------------------------------------------------------------------------------------
+## Computing agreement coefficients from the distribution of raters by subject & category
 
 Included in this package is a small dataset named **distrib.6raters**,
 which contains the distribution of 6 raters by subject and category.
@@ -116,10 +111,8 @@ and how it can be used to compute the various agreement coefficients:
     #>          pa        pe
     #> 1 0.5560988 0.2340741
     bp.coeff.dist(distrib.6raters)
-    #>         coeff.name     coeff     stderr      conf.int   p.value        pa
-    #> 1 Brennan-Prediger 0.4388889 0.08312142 (0.261,0.617) 0.0001163 0.5511111
-    #>    pe
-    #> 1 0.2
+    #>         coeff.name     coeff     stderr      conf.int   p.value        pa  pe
+    #> 1 Brennan-Prediger 0.4388889 0.08312142 (0.261,0.617) 0.0001163 0.5511111 0.2
 
 Once again, you can request a single value from these functions. To get
 only Krippendorff’s alpha coefficient without it’s precission measures,
@@ -146,8 +139,7 @@ Note that the input dataset supplied to the function is
 extracted from the original datset and used as input data. We know from
 the value of the newly created variable that AC<sub>1</sub> = 0.3518903.
 
-Computing agreement coefficients from raw ratings
--------------------------------------------------
+## Computing agreement coefficients from raw ratings
 
 One example dataset of raw ratings included in this package is
 **cac.raw4raters** and looks like this:
@@ -214,10 +206,10 @@ ratings:
     #> [1] 1 2 3 4 5
     fleiss.kappa.raw(cac.raw4raters)
     #> $est
-    #>      coeff.name        pa        pe coeff.val coeff.se  conf.int
-    #> 1 Fleiss' Kappa 0.8181818 0.2387153   0.76117  0.15302 (0.424,1)
-    #>       p.value     w.name
-    #> 1 0.000419173 unweighted
+    #>      coeff.name        pa        pe coeff.val coeff.se  conf.int     p.value
+    #> 1 Fleiss' Kappa 0.8181818 0.2387153   0.76117  0.15302 (0.424,1) 0.000419173
+    #>       w.name
+    #> 1 unweighted
     #> 
     #> $weights
     #>      [,1] [,2] [,3] [,4] [,5]
@@ -231,10 +223,10 @@ ratings:
     #> [1] 1 2 3 4 5
     krippen.alpha.raw(cac.raw4raters)
     #> $est
-    #>             coeff.name    pa   pe coeff.val coeff.se  conf.int
-    #> 1 Krippendorff's Alpha 0.805 0.24   0.74342  0.14557 (0.419,1)
-    #>        p.value     w.name
-    #> 1 0.0004594257 unweighted
+    #>             coeff.name    pa   pe coeff.val coeff.se  conf.int      p.value
+    #> 1 Krippendorff's Alpha 0.805 0.24   0.74342  0.14557 (0.419,1) 0.0004594257
+    #>       w.name
+    #> 1 unweighted
     #> 
     #> $weights
     #>      [,1] [,2] [,3] [,4] [,5]
@@ -248,10 +240,10 @@ ratings:
     #> [1] 1 2 3 4 5
     conger.kappa.raw(cac.raw4raters)
     #> $est
-    #>       coeff.name        pa        pe coeff.val coeff.se  conf.int
-    #> 1 Conger's Kappa 0.8181818 0.2334252   0.76282  0.14917 (0.435,1)
-    #>        p.value     w.name
-    #> 1 0.0003367066 unweighted
+    #>       coeff.name        pa        pe coeff.val coeff.se  conf.int      p.value
+    #> 1 Conger's Kappa 0.8181818 0.2334252   0.76282  0.14917 (0.435,1) 0.0003367066
+    #>       w.name
+    #> 1 unweighted
     #> 
     #> $weights
     #>      [,1] [,2] [,3] [,4] [,5]
@@ -301,14 +293,12 @@ You can even request only the AC<sub>1</sub> coefficient estimate
     ac1$coeff.val
     #> [1] 0.77544
 
-References:
-===========
+# References:
 
 1.  Gwet, K.L. (2014,
     [ISBN:978-0970806284](https://www.amazon.com/Handbook-Inter-Rater-Reliability-Definitive-Measuring/dp/0970806280/)).
     “*Handbook of Inter-Rater Reliability*,” 4th Edition. Advanced
     Analytics, LLC
-2.  Klein, D. (2018)
-    doi:<a href="https://doi.org/10.1177/1536867X1801800408" class="uri">https://doi.org/10.1177/1536867X1801800408</a>.
+2.  Klein, D. (2018) doi:<https://doi.org/10.1177/1536867X1801800408>.
     “Implementing a general framework for assessing interrater agreement
     in Stata,” *The Stata Journal* Volume 18, Number 4, pp. 871-901.

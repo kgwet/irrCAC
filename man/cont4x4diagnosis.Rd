@@ -4,7 +4,8 @@
 \name{cont4x4diagnosis}
 \alias{cont4x4diagnosis}
 \title{Distribution of 223 Psychiatric Patients by Type of of Psychiatric Disorder and Diagnosis Method.}
-\format{This dataset contains a 4x4 squared table. The first column is never used in the calculations and only 
+\format{
+This dataset contains a 4x4 squared table. The first column is never used in the calculations and only 
 contains row names. Only the last 4 columns are used for computing agreement coefficients. 
  \describe{
     \item{Diagnosis}{Pregnancy Type. This variable is shown here for information only and is never used by any function 
@@ -13,7 +14,8 @@ contains row names. Only the last 4 columns are used for computing agreement coe
     \item{Bipolar.Disorder}{Abnormal Intrauterine Pregnancy}
     \item{Depression}{Normal Intrauterine Pregnancy}
     \item{Other}{Normal Intrauterine Pregnancy}
- }}
+ }
+}
 \source{
 Gwet, K.L. (2014). \emph{Handbook of Inter-Rater Reliability}, 4th Edition. Advanced Analytics, LLC.
 }
