@@ -1,0 +1,27 @@
+summarise(as.data.frame(a),across(Rater1:Rater4,sum))
+
+dplyr::summarise(as.data.frame(1-is.na(x.raw10x4[,2:5])),across(1:4,sum))
+
+pa.coeff.raw(x.raw10x4[,2:5])
+pa.coeff.raw(x.raw12x4[,2:5],weights = "ordinal")
+krippen.alpha.raw(x.raw12x4[,2:5])
+
+df1 <- tibble(
+  student_id = 1:4, 
+  test1 = 10:13, 
+  test2 = 20:23, 
+  test3 = 30:33, 
+  test4 = 40:43
+  )
+
+df<-data.frame(a=c(1,1,2,2),x=1:4,y=3:6,z=rep(2,4))
+df%>%rowwise() 
+
+mutate(rowwise(df),total=sum(x,y,z))
+
+summarise(rowwise(x.dist10x5[,2:6]),max(across(1:5)))
+summarise(x.dist10x5[,2:6],ri=rowSums(across(1:5)))%>%min()
+
+summarise(rowwise(df),total=sum(x,y,z))
+group_by(df,a)%>%summarise(total=sum(x,y))
+group_by(df,a)%>%summarise(across(1:3,sum))
