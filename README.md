@@ -98,13 +98,13 @@ and how it can be used to compute the various agreement coefficients:
     gwet.ac1.dist(distrib.6raters)
     #>   coeff.name     coeff     stderr      conf.int      p.value        pa
     #> 1 Gwet's AC1 0.4448007 0.08418757 (0.264,0.625) 0.0001155927 0.5511111
-    #>          pe
-    #> 1 0.1914815
+    #>          pe  n q r.min r.max
+    #> 1 0.1914815 15 5     6     6
     fleiss.kappa.dist(distrib.6raters)
     #>      coeff.name     coeff     stderr     conf.int      p.value        pa
     #> 1 Fleiss' Kappa 0.4139265 0.08119291 (0.24,0.588) 0.0001622724 0.5511111
-    #>          pe
-    #> 1 0.2340741
+    #>          pe  n q r.min r.max
+    #> 1 0.2340741 15 5     6     6
     krippen.alpha.dist(distrib.6raters)
     #>             coeff.name     coeff     stderr      conf.int      p.value
     #> 1 Krippendorff's Alpha 0.4204384 0.08243228 (0.244,0.597) 0.0001615721
