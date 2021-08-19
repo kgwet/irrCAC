@@ -45,8 +45,7 @@
 #' gwet.ac1.dist(distrib.6raters,weights = quadratic.weights(1:q)) #AC2 with quadratic weights
 #' @source Gwet, K. L. (2008). ``Computing inter-rater reliability and its variance in the presence of high agreement," 
 #' \emph{British Journal of Mathematical and Statistical Psychology}, 61, 29-48.
-#' @importFrom magrittr %>%
-#' @importFrom dplyr across
+#' @importFrom dplyr across %>%
 #' @export
 gwet.ac1.dist <- function(ratings,weights="unweighted",categ=NULL,conflev=0.95,N=Inf){ 
   agree.mat <- as.matrix(ratings) 
