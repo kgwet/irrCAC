@@ -1,5 +1,5 @@
 #					AGREE.COEFF3.DIST.R
-#				 	 (July 29, 2019)
+#				 	 (July 29, 2019, Revised August 19, 2021)
 #Description: This script file contains a series of R functions for computing various agreement coefficients
 #		  for multiple raters (2 or more) when the input data file is in the form of nxq matrix or data frame showing 
 #             the count of raters by subject and by category. That is n = number of subjects, and q = number of categories.
@@ -364,9 +364,11 @@ krippen.alpha.dist <- function(ratings,weights="unweighted",categ=NULL,conflev=0
   conf.int <- paste0("(",round(lcb,3),",",round(ucb,3),")")
   coeff <- krippen.alpha
   coeff.name <-"Krippendorff's Alpha"
-  df.out <- data.frame(coeff.name,coeff,stderr,conf.int,p.value,pa,pe)
-  #colnames(df.out) <- c("pa","pe","alpha","stderr","Conf.Int","p.value")
-  #invisible(df.out)
+  
+  r.min <- dplyr::summarise(as.data.frame(agree.mat),ri=rowSums(across(1:q)))%>%min()
+  r.max <- dplyr::summarise(as.data.frame(agree.mat),ri=rowSums(across(1:q)))%>%max()
+  df.out <- data.frame(coeff.name,coeff,stderr,conf.int,
+                       p.value,pa,pe,n,q,r.min,r.max)
   return(df.out)
 }
 #===========================================================================================
@@ -473,9 +475,11 @@ bp.coeff.dist <- function(ratings,weights="unweighted",categ=NULL,conflev=0.95,N
   conf.int <- paste0("(",round(lcb,3),",",round(ucb,3),")")
   coeff <- bp.coeff
   coeff.name <- "Brennan-Prediger"
-  df.out <- data.frame(coeff.name,coeff,stderr,conf.int,p.value,pa,pe)
-  #colnames(df.out) <- c("pa","pe","B.P","stderr","Conf.Int","p.value")
-  #invisible(df.out)
+  
+  r.min <- dplyr::summarise(as.data.frame(agree.mat),ri=rowSums(across(1:q)))%>%min()
+  r.max <- dplyr::summarise(as.data.frame(agree.mat),ri=rowSums(across(1:q)))%>%max()
+  df.out <- data.frame(coeff.name,coeff,stderr,conf.int,
+                       p.value,pa,pe,n,q,r.min,r.max)
   return(df.out)
 }
 #======================================================================================
@@ -564,7 +568,9 @@ pa.coeff.dist <- function(ratings,weights="unweighted",categ=NULL,conflev=0.95,N
   pe <-0
   coeff <- pa
   coeff.name <- "Percent agreement"
-  df.out <- data.frame(coeff.name,coeff,stderr,conf.int,p.value,pa,pe)
+  r.min <- dplyr::summarise(as.data.frame(agree.mat),ri=rowSums(across(1:q)))%>%min()
+  r.max <- dplyr::summarise(as.data.frame(agree.mat),ri=rowSums(across(1:q)))%>%max()
+  df.out <- data.frame(coeff.name,coeff,stderr,conf.int,
+                       p.value,pa,pe,n,q,r.min,r.max)
   return(df.out)
 }
-

@@ -123,9 +123,10 @@ pa.coeff.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conflev=
     coeff.se <- stderr.est
   }
   obs.count <- dplyr::summarise(as.data.frame(1-is.na(ratings)),across(1:r,sum))
+  tot.obs <- sum((1-is.na(ratings)))
   coeff.name <- "Percent Agreement"
   df.out <- data.frame(coeff.name,pa,pe,coeff.val,coeff.se,
-                       conf.int,p.value,w.name)
+                       conf.int,p.value,tot.obs,w.name)
   return(list("est" = df.out,"weights" = weights.mat,
               "categories"=categ,"obs"=obs.count))
 }
@@ -254,7 +255,9 @@ gwet.ac1.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conflev=
   coeff.val <- gwet.ac1.est
   coeff.se <- stderr.est
   obs.count <- dplyr::summarise(as.data.frame(1-is.na(ratings)),across(1:r,sum))
-  df.out <- data.frame(coeff.name,pa,pe,coeff.val,coeff.se,conf.int,p.value,w.name)
+  tot.obs <- sum((1-is.na(ratings)))
+  df.out <- data.frame(coeff.name,pa,pe,coeff.val,coeff.se,conf.int,
+                       p.value,tot.obs,w.name)
   return(list("est" = df.out,"weights" = weights.mat,
               "categories"=categ,"obs"=obs.count))
 }
@@ -385,7 +388,9 @@ fleiss.kappa.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conf
   coeff.val <- fleiss.kappa.est
   coeff.se <- stderr.est
   obs.count <- dplyr::summarise(as.data.frame(1-is.na(ratings)),across(1:r,sum))
-  df.out <- data.frame(coeff.name,pa,pe,coeff.val,coeff.se,conf.int,p.value,w.name)
+  tot.obs <- sum((1-is.na(ratings)))
+  df.out <- data.frame(coeff.name,pa,pe,coeff.val,coeff.se,conf.int,
+                       p.value,tot.obs,w.name)
   return(list("est" = df.out,"weights" = weights.mat,
               "categories"=categ,"obs"=obs.count))
 }
@@ -525,9 +530,10 @@ krippen.alpha.raw <- function(ratings,weights="unweighted",categ.labels=NULL,con
   coeff.val <- krippen.alpha.est
   obs.count <- dplyr::summarise(as.data.frame(1-is.na(ratings)),
                                 across(1:r,sum))
+  tot.obs <- sum((1-is.na(ratings)))
   coeff.name <- "Krippendorff's Alpha"
   df.out <- data.frame(coeff.name,pa,pe,coeff.val,coeff.se,
-                       conf.int,p.value,w.name)
+                       conf.int,p.value,tot.obs,w.name)
   return(list("est" = df.out,"weights" = weights.mat,
               "categories"=categ,"obs"=obs.count))
 }
@@ -682,7 +688,9 @@ conger.kappa.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conf
   coeff.val <- conger.kappa.est
   coeff.se <- stderr.est
   obs.count <- dplyr::summarise(as.data.frame(1-is.na(ratings)),across(1:r,sum))
-  df.out <- data.frame(coeff.name,pa,pe,coeff.val,coeff.se,conf.int,p.value,w.name)
+  tot.obs <- sum((1-is.na(ratings)))
+  df.out <- data.frame(coeff.name,pa,pe,coeff.val,coeff.se,conf.int,
+                       p.value,tot.obs,w.name)
   return(list("est" = df.out,"weights" = weights.mat,
               "categories"=categ,"obs"=obs.count))
 }
@@ -807,7 +815,9 @@ bp.coeff.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conflev=
   coeff.val <- bp.coeff.est
   coeff.se <- stderr.est
   obs.count <- dplyr::summarise(as.data.frame(1-is.na(ratings)),across(1:r,sum))
-  df.out <- data.frame(coeff.name,pa,pe,coeff.val,coeff.se,conf.int,p.value,w.name)
+  tot.obs <- sum((1-is.na(ratings)))
+  df.out <- data.frame(coeff.name,pa,pe,coeff.val,coeff.se,conf.int,
+                       p.value,tot.obs,w.name)
   return(list("est" = df.out,"weights" = weights.mat,
               "categories"=categ,"obs"=obs.count))
 }
