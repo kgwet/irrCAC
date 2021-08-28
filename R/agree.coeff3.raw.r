@@ -491,8 +491,9 @@ krippen.alpha.raw <- function(ratings,weights="unweighted",categ.labels=NULL,con
     else if (weights=="bipolar") weights.mat<-bipolar.weights(categ)
     else weights.mat <- identity.weights(categ)
   }else{
-    w.name <- "Cutsom Weights"
+    w.name <- "Custom Weights"
     weights.mat= as.matrix(weights)
+    if (sum(weights.mat)==q) w.name <- "Unweighted"
   } 
   
   # creating the nxq agreement matrix representing the distribution of raters by subjects and category
