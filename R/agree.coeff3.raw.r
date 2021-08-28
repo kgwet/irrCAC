@@ -84,6 +84,7 @@ pa.coeff.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conflev=
   }else{
     w.name <- "Custom weights"
     weights.mat= as.matrix(weights)
+    if (sum(weights.mat)==q) w.name <- "Unweighted"
   } 
   
   # creating the nxq agreement matrix representing the distribution of raters by subjects and category
@@ -209,6 +210,7 @@ gwet.ac1.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conflev=
   }else{
     w.name <- "Custom Weights"
     weights.mat= as.matrix(weights)
+    if (sum(weights.mat)==q) w.name <- "Unweighted"
   }
 
   # creating the nxq agreement matrix representing the distribution of raters by subjects and category
@@ -347,6 +349,7 @@ fleiss.kappa.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conf
   }else{
     w.name <- "Custom Weights"
     weights.mat= as.matrix(weights)
+    if (sum(weights.mat)==q) w.name <- "Unweighted"
   }
   
   # creating the nxq agreement matrix representing the distribution of raters by subjects and category
@@ -625,6 +628,7 @@ conger.kappa.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conf
   }else{
     w.name <- "Custom Weights"
     weights.mat <- weights
+    if (sum(weights.mat)==q) w.name <- "Unweighted"
   } 
   
   # creating the nxq agreement matrix representing the distribution of raters by subjects and category
@@ -788,6 +792,7 @@ bp.coeff.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conflev=
   }else{
     w.name <- "Custom Weights"
     weights.mat= as.matrix(weights)
+    if (sum(weights.mat)==q) w.name <- "Unweighted"
   } 
   
   # creating the nxq agreement matrix representing the distribution of raters by subjects and category
