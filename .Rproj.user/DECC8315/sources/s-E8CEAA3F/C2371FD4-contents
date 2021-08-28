@@ -122,8 +122,11 @@ pa.coeff.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conflev=
     conf.int <- paste0("(",round(lcb,3),",",round(ucb,3),")")
     coeff.se <- stderr.est
   }
+  cnames <- colnames(ratings)
+  colnames(ratings) <- sapply(1:r, function(x) paste0("dumcol", x))
   obs.count <- dplyr::summarise(as.data.frame(1-is.na(ratings)),across(1:r,sum))
   tot.obs <- sum((1-is.na(ratings)))
+  colnames(obs.count) <- cnames
   coeff.name <- "Percent Agreement"
   df.out <- data.frame(coeff.name,pa,pe,coeff.val,coeff.se,
                        conf.int,p.value,tot.obs,w.name)
@@ -184,7 +187,7 @@ gwet.ac1.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conflev=
   f <- n/N # finite population correction 
 
   # creating a vector containing all categories used by the raters
- 
+
   if (is.null(categ.labels)){
     categ.init <- unique(na.omit(as.vector(ratings.mat)))
     categ <- sort(categ.init)
@@ -207,6 +210,7 @@ gwet.ac1.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conflev=
     w.name <- "Custom Weights"
     weights.mat= as.matrix(weights)
   }
+
   # creating the nxq agreement matrix representing the distribution of raters by subjects and category
 
   agree.mat <- matrix(0,nrow=n,ncol=q)
@@ -215,18 +219,18 @@ gwet.ac1.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conflev=
     agree.mat[,k] <- (replace(categ.is.k,is.na(categ.is.k),FALSE)) %*% rep(1,r)    
   }
   agree.mat.w <- t(weights.mat%*%t(agree.mat))
+  
   # calculating gwet's ac1 coefficient
 
   ri.vec <- agree.mat%*%rep(1,q)
   sum.q <- (agree.mat*(agree.mat.w-1))%*%rep(1,q)
   n2more <- sum(ri.vec>=2)
   pa <- sum(sum.q[ri.vec>=2]/((ri.vec*(ri.vec-1))[ri.vec>=2]))/n2more
-
   pi.vec <- t(t(rep(1/n,n))%*%(agree.mat/(ri.vec%*%t(rep(1,q)))))
   if (q>=2){pe <- sum(weights.mat) * sum(pi.vec*(1-pi.vec)) / (q*(q-1))}else pe=1e-15
   gwet.ac1 <- (pa-pe)/(1-pe)
   gwet.ac1.est <- round(gwet.ac1,5)
-
+  
   # calculating variance, stderr & p-value of gwet's ac1 coefficient
   
   den.ivec <- ri.vec*(ri.vec-1)
@@ -254,8 +258,14 @@ gwet.ac1.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conflev=
   }
   coeff.val <- gwet.ac1.est
   coeff.se <- stderr.est
+  #Note that dplyr::summarise does not accept data frames with duplicate columns.
+  #Therefore, I save the original column names, assign different names and restore
+  #original names after using the summarise function
+  cnames <- colnames(ratings)
+  colnames(ratings) <- sapply(1:r, function(x) paste0("dumcol", x))
   obs.count <- dplyr::summarise(as.data.frame(1-is.na(ratings)),across(1:r,sum))
   tot.obs <- sum((1-is.na(ratings)))
+  colnames(obs.count) <- cnames
   df.out <- data.frame(coeff.name,pa,pe,coeff.val,coeff.se,conf.int,
                        p.value,tot.obs,w.name)
   return(list("est" = df.out,"weights" = weights.mat,
@@ -387,8 +397,11 @@ fleiss.kappa.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conf
   coeff.name <- "Fleiss' Kappa"
   coeff.val <- fleiss.kappa.est
   coeff.se <- stderr.est
+  cnames <- colnames(ratings)
+  colnames(ratings) <- sapply(1:r, function(x) paste0("dumcol", x))
   obs.count <- dplyr::summarise(as.data.frame(1-is.na(ratings)),across(1:r,sum))
   tot.obs <- sum((1-is.na(ratings)))
+  colnames(obs.count) <- cnames
   df.out <- data.frame(coeff.name,pa,pe,coeff.val,coeff.se,conf.int,
                        p.value,tot.obs,w.name)
   return(list("est" = df.out,"weights" = weights.mat,
@@ -528,9 +541,11 @@ krippen.alpha.raw <- function(ratings,weights="unweighted",categ.labels=NULL,con
     coeff.se <- stderr.est
   }
   coeff.val <- krippen.alpha.est
-  obs.count <- dplyr::summarise(as.data.frame(1-is.na(ratings)),
-                                across(1:r,sum))
+  cnames <- colnames(ratings)
+  colnames(ratings) <- sapply(1:r, function(x) paste0("dumcol", x))
+  obs.count <- dplyr::summarise(as.data.frame(1-is.na(ratings)),across(1:r,sum))
   tot.obs <- sum((1-is.na(ratings)))
+  colnames(obs.count) <- cnames
   coeff.name <- "Krippendorff's Alpha"
   df.out <- data.frame(coeff.name,pa,pe,coeff.val,coeff.se,
                        conf.int,p.value,tot.obs,w.name)
@@ -687,8 +702,11 @@ conger.kappa.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conf
   coeff.name <- "Conger's Kappa"
   coeff.val <- conger.kappa.est
   coeff.se <- stderr.est
+  cnames <- colnames(ratings)
+  colnames(ratings) <- sapply(1:r, function(x) paste0("dumcol", x))
   obs.count <- dplyr::summarise(as.data.frame(1-is.na(ratings)),across(1:r,sum))
   tot.obs <- sum((1-is.na(ratings)))
+  colnames(obs.count) <- cnames
   df.out <- data.frame(coeff.name,pa,pe,coeff.val,coeff.se,conf.int,
                        p.value,tot.obs,w.name)
   return(list("est" = df.out,"weights" = weights.mat,
@@ -814,8 +832,11 @@ bp.coeff.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conflev=
   coeff.name <- "Brennan-Prediger"
   coeff.val <- bp.coeff.est
   coeff.se <- stderr.est
+  cnames <- colnames(ratings)
+  colnames(ratings) <- sapply(1:r, function(x) paste0("dumcol", x))
   obs.count <- dplyr::summarise(as.data.frame(1-is.na(ratings)),across(1:r,sum))
   tot.obs <- sum((1-is.na(ratings)))
+  colnames(obs.count) <- cnames
   df.out <- data.frame(coeff.name,pa,pe,coeff.val,coeff.se,conf.int,
                        p.value,tot.obs,w.name)
   return(list("est" = df.out,"weights" = weights.mat,

@@ -23,7 +23,7 @@ gwet.ac1.dist(
 weights and must take one of the values ("quadratic", "ordinal", "linear", "radical", "ratio", "circular", "bipolar"). 
 If this parameter is a matrix then it must be a square matri qxq where q is the number of posssible categories where a subject 
 can be classified. If some of the q possible categories are not used, then it is strobgly advised to specify the complete list of 
-possible categories as a vector in parametr categ. Otherwise, only the categories reported will be used.}
+possible categories as a vector in parameter categ. Otherwise, only the categories reported will be used.}
 
 \item{categ}{An optional parameter representing all categories available to raters during the experiment. This parameter may be useful if 
 some categories were not used by any rater inspite of being available to the raters.}
