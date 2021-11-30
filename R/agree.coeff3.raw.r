@@ -116,7 +116,7 @@ pa.coeff.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conflev=
       var.pa <- ((1-f)/(n*(n-1))) * sum((pa.ivec - pa)^2)
       stderr <- sqrt(var.pa)# pa's standard error
       stderr.est <- round(stderr,5)
-      p.value <- 2*(1-pt(abs(pa/stderr),n-1))
+      p.value <- 1-pt(pa/stderr,n-1)
       lcb <- pa - stderr*qt(1-(1-conflev)/2,n-1) # lower confidence bound
       ucb <- min(1,pa + stderr*qt(1-(1-conflev)/2,n-1)) # upper confidence bound 
     }
@@ -248,7 +248,7 @@ gwet.ac1.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conflev=
     var.ac1 <- ((1-f)/(n*(n-1))) * sum((ac1.ivec.x - gwet.ac1)^2)
     stderr <- sqrt(var.ac1)# ac1's standard error
     stderr.est <- round(stderr,5)
-    p.value <- 2*(1-pt(abs(gwet.ac1/stderr),n-1))
+    p.value <- 1-pt(gwet.ac1/stderr,n-1)
     lcb <- gwet.ac1 - stderr*qt(1-(1-conflev)/2,n-1) # lower confidence bound
     ucb <- min(1,gwet.ac1 + stderr*qt(1-(1-conflev)/2,n-1)) # upper confidence bound
   }
@@ -392,7 +392,7 @@ fleiss.kappa.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conf
     var.fleiss <- ((1-f)/(n*(n-1))) * sum((kappa.ivec.x - fleiss.kappa)^2)
     stderr <- sqrt(var.fleiss)# kappa's standard error
     stderr.est <- round(stderr,5)
-    p.value <- 2*(1-pt(abs(fleiss.kappa/stderr),n-1))
+    p.value <- 1-pt(fleiss.kappa/stderr,n-1)
     lcb <- fleiss.kappa - stderr*qt(1-(1-conflev)/2,n-1) # lower confidence bound
     ucb <- min(1,fleiss.kappa + stderr*qt(1-(1-conflev)/2,n-1)) # upper confidence bound
   }
@@ -537,7 +537,7 @@ krippen.alpha.raw <- function(ratings,weights="unweighted",categ.labels=NULL,con
       var.krippen <- ((1-f)/(n*(n-1))) * sum((krippen.ivec.x - krippen.alpha.prime)^2)
       stderr <- sqrt(var.krippen)# alpha's standard error
       stderr.est <- round(stderr,5)
-      p.value <- 2*(1-pt(abs(krippen.alpha/stderr),n0-1))
+      p.value <- 1-pt(krippen.alpha/stderr,n0-1)
       lcb <- krippen.alpha - stderr*qt(1-(1-conflev)/2,n0-1) # lower confidence bound
       ucb <- min(1,krippen.alpha + stderr*qt(1-(1-conflev)/2,n0-1)) # upper confidence bound
     }
@@ -699,7 +699,7 @@ conger.kappa.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conf
     var.conger <- ((1-f)/(n*(n-1))) * sum((conger.ivec.x - conger.kappa)^2)
     stderr <- sqrt(var.conger)# conger's kappa standard error
     stderr.est <- round(stderr,5)
-    p.value <- 2*(1-pt(abs(conger.kappa/stderr),n-1))
+    p.value <- 1-pt(conger.kappa/stderr,n-1)
     lcb <- conger.kappa - stderr*qt(1-(1-conflev)/2,n-1) # lower confidence bound
     ucb <- min(1,conger.kappa + stderr*qt(1-(1-conflev)/2,n-1)) # upper confidence bound
   }
@@ -830,7 +830,7 @@ bp.coeff.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conflev=
     var.bp <- ((1-f)/(n*(n-1))) * sum((bp.ivec - bp.coeff)^2)
     stderr <- sqrt(var.bp)# BP's standard error
     stderr.est <- round(stderr,5)
-    p.value <- 2*(1-pt(abs(bp.coeff/stderr),n-1))
+    p.value <- 1-pt(bp.coeff/stderr,n-1)
     lcb <- bp.coeff - stderr*qt(1-(1-conflev)/2,n-1) # lower confidence bound
     ucb <- min(1,bp.coeff + stderr*qt(1-(1-conflev)/2,n-1)) # upper confidence bound
   }

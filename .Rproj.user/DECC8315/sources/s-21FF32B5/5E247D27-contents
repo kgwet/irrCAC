@@ -109,7 +109,7 @@ gwet.ac1.dist <- function(ratings,weights="unweighted",categ=NULL,conflev=0.95,N
   
   var.ac1 <- ((1-f)/(n*(n-1))) * sum((ac1.ivec.x - gwet.ac1)^2)
   stderr <- sqrt(var.ac1)# ac1's standard error
-  p.value <- 2*(1-pt(gwet.ac1/stderr,n-1))
+  p.value <- 1-pt(gwet.ac1/stderr,n-1)
   
   lcb <- gwet.ac1 - stderr*qt(1-(1-conflev)/2,n-1) # lower confidence bound
   ucb <- min(1,gwet.ac1 + stderr*qt(1-(1-conflev)/2,n-1)) # upper confidence bound
@@ -227,7 +227,7 @@ fleiss.kappa.dist <- function(ratings,weights="unweighted",categ=NULL,conflev=0.
   
   var.fleiss <- ((1-f)/(n*(n-1))) * sum((kappa.ivec.x - fleiss.kappa)^2)
   stderr <- sqrt(var.fleiss)# kappa's standard error
-  p.value <- 2*(1-pt(fleiss.kappa/stderr,n-1))
+  p.value <- 1-pt(fleiss.kappa/stderr,n-1)
   
   lcb <- fleiss.kappa - stderr*qt(1-(1-conflev)/2,n-1) # lower confidence bound
   ucb <- min(1,fleiss.kappa + stderr*qt(1-(1-conflev)/2,n-1)) # upper confidence bound
@@ -357,7 +357,7 @@ krippen.alpha.dist <- function(ratings,weights="unweighted",categ=NULL,conflev=0
   
   var.krippen <- ((1-f)/(n*(n-1))) * sum((krippen.ivec.x - krippen.alpha)^2)
   stderr <- sqrt(var.krippen)# alpha's standard error
-  p.value <- 2*(1-pt(krippen.alpha/stderr,n-1))
+  p.value <- 1-pt(krippen.alpha/stderr,n-1)
   
   lcb <- krippen.alpha - stderr*qt(1-(1-conflev)/2,n-1) # lower confidence bound
   ucb <- min(1,krippen.alpha + stderr*qt(1-(1-conflev)/2,n-1)) # upper confidence bound
@@ -468,7 +468,7 @@ bp.coeff.dist <- function(ratings,weights="unweighted",categ=NULL,conflev=0.95,N
   bp.ivec <- (n/n2more)*(pa.ivec-pe.r2)/(1-pe)
   var.bp <- ((1-f)/(n*(n-1))) * sum((bp.ivec - bp.coeff)^2)
   stderr <- sqrt(var.bp)# BP's standard error
-  p.value <- 2*(1-pt(bp.coeff/stderr,n-1))
+  p.value <- 1-pt(bp.coeff/stderr,n-1)
   
   lcb <- bp.coeff - stderr*qt(1-(1-conflev)/2,n-1) # lower confidence bound
   ucb <- min(1,bp.coeff + stderr*qt(1-(1-conflev)/2,n-1)) # upper confidence bound
@@ -560,7 +560,7 @@ pa.coeff.dist <- function(ratings,weights="unweighted",categ=NULL,conflev=0.95,N
   pa.ivec <- (n/n2more)*pa.ivec
   var.pa <- ((1-f)/(n*(n-1))) * sum((pa.ivec - pa)^2)
   stderr <- sqrt(var.pa)# kappa's standard error
-  p.value <- 2*(1-pt(pa/stderr,n-1))
+  p.value <- 1-pt(pa/stderr,n-1)
   
   lcb <- pa - stderr*qt(1-(1-conflev)/2,n-1) # lower confidence bound
   ucb <- min(1,pa + stderr*qt(1-(1-conflev)/2,n-1)) # upper confidence bound
