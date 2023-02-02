@@ -1,4 +1,9 @@
     library(irrCAC)
+    #> Warning: replacing previous import 'lifecycle::last_warnings' by
+    #> 'rlang::last_warnings' when loading 'pillar'
+    #> Warning: replacing previous import 'lifecycle::last_warnings' by
+    #> 'rlang::last_warnings' when loading 'tibble'
+    source("C:\\Users\\GWET-ASUS-14\\Documents\\Cloud Computing\\RpackagesWork\\irrCAC\\R\\agree.coeff2.r")
 
 # Installation
 
@@ -16,7 +21,7 @@ The functions included in this package can handle 3 types of input data:
 (1) the contingency table, (2) the distribution of raters by subject and
 by category, (3) the raw data, which is essentially a plain dataset
 where each row represents a subject and each column, the ratings
-associated with one rater. The list of all datasets containined in this
+associated with one rater. The list of all datasets contained in this
 package can be listed as follows:
 
       data(package="irrCAC")
@@ -29,8 +34,8 @@ package can be listed as follows:
 that contain rating data from 2 raters organized in the form of a
 contingency table. The following r script shows how to compute Cohen’s
 kappa, Scott’s Pi, Gwet’s AC<sub>1</sub>, Brennan-Prediger,
-Krippendorff’s alpha, and the percent agreement coefficients from this
-dataset.
+Krippendorff’s alpha, Bangdiwala’s B, and the percent agreement
+coefficients from this dataset.
 
       cont3x3abstractors
     #>         Ectopic AIU NIU
@@ -52,6 +57,9 @@ dataset.
       krippen2.table(cont3x3abstractors)
     #>             coeff.name coeff.val   coeff.se     coeff.ci coeff.pval
     #> 1 Krippendorff's Alpha 0.7972585 0.05905473 (0.68,0.914)      0e+00
+      bangdiwala.table(cont3x3abstractors)
+    #>       coeff.name coeff.val   coeff.se      coeff.ci coeff.pval
+    #> 1 Bangdiwala's B 0.8059604 0.05449465 (0.698,0.914)      0e+00
       pa2.table(cont3x3abstractors)
     #>          coeff.name coeff.val   coeff.se      coeff.ci coeff.pval
     #> 1 Percent Agreement      0.89 0.03128898 (0.828,0.952)      0e+00
@@ -108,11 +116,13 @@ and how it can be used to compute the various agreement coefficients:
     krippen.alpha.dist(distrib.6raters)
     #>             coeff.name     coeff     stderr      conf.int      p.value
     #> 1 Krippendorff's Alpha 0.4204384 0.08243228 (0.244,0.597) 0.0001615721
-    #>          pa        pe
-    #> 1 0.5560988 0.2340741
+    #>          pa        pe  n q r.min r.max
+    #> 1 0.5560988 0.2340741 15 5     6     6
     bp.coeff.dist(distrib.6raters)
     #>         coeff.name     coeff     stderr      conf.int   p.value        pa  pe
     #> 1 Brennan-Prediger 0.4388889 0.08312142 (0.261,0.617) 0.0001163 0.5511111 0.2
+    #>    n q r.min r.max
+    #> 1 15 5     6     6
 
 Once again, you can request a single value from these functions. To get
 only Krippendorff’s alpha coefficient without it’s precission measures,
@@ -174,8 +184,8 @@ ratings:
     #> $est
     #>          coeff.name        pa pe coeff.val coeff.se  conf.int      p.value
     #> 1 Percent Agreement 0.8181818  0 0.8181818  0.12561 (0.542,1) 4.345373e-05
-    #>       w.name
-    #> 1 unweighted
+    #>   tot.obs     w.name
+    #> 1      41 unweighted
     #> 
     #> $weights
     #>      [,1] [,2] [,3] [,4] [,5]
@@ -195,8 +205,8 @@ ratings:
     #> $est
     #>   coeff.name        pa        pe coeff.val coeff.se  conf.int     p.value
     #> 1        AC1 0.8181818 0.1903212   0.77544  0.14295 (0.461,1) 0.000208721
-    #>       w.name
-    #> 1 unweighted
+    #>   tot.obs     w.name
+    #> 1      41 unweighted
     #> 
     #> $weights
     #>      [,1] [,2] [,3] [,4] [,5]
@@ -216,8 +226,8 @@ ratings:
     #> $est
     #>      coeff.name        pa        pe coeff.val coeff.se  conf.int     p.value
     #> 1 Fleiss' Kappa 0.8181818 0.2387153   0.76117  0.15302 (0.424,1) 0.000419173
-    #>       w.name
-    #> 1 unweighted
+    #>   tot.obs     w.name
+    #> 1      41 unweighted
     #> 
     #> $weights
     #>      [,1] [,2] [,3] [,4] [,5]
@@ -237,8 +247,8 @@ ratings:
     #> $est
     #>             coeff.name    pa   pe coeff.val coeff.se  conf.int      p.value
     #> 1 Krippendorff's Alpha 0.805 0.24   0.74342  0.14548 (0.423,1) 0.0003386245
-    #>       w.name
-    #> 1 unweighted
+    #>   tot.obs     w.name
+    #> 1      41 unweighted
     #> 
     #> $weights
     #>      [,1] [,2] [,3] [,4] [,5]
@@ -258,8 +268,8 @@ ratings:
     #> $est
     #>       coeff.name        pa        pe coeff.val coeff.se  conf.int      p.value
     #> 1 Conger's Kappa 0.8181818 0.2334252   0.76282  0.14917 (0.435,1) 0.0003367066
-    #>       w.name
-    #> 1 unweighted
+    #>   tot.obs     w.name
+    #> 1      41 unweighted
     #> 
     #> $weights
     #>      [,1] [,2] [,3] [,4] [,5]
@@ -279,8 +289,8 @@ ratings:
     #> $est
     #>         coeff.name        pa  pe coeff.val coeff.se  conf.int      p.value
     #> 1 Brennan-Prediger 0.8181818 0.2   0.77273  0.14472 (0.454,1) 0.0002375609
-    #>       w.name
-    #> 1 unweighted
+    #>   tot.obs     w.name
+    #> 1      41 unweighted
     #> 
     #> $weights
     #>      [,1] [,2] [,3] [,4] [,5]
@@ -307,8 +317,8 @@ experiment with the other coefficients):
     ac1
     #>   coeff.name        pa        pe coeff.val coeff.se  conf.int     p.value
     #> 1        AC1 0.8181818 0.1903212   0.77544  0.14295 (0.461,1) 0.000208721
-    #>       w.name
-    #> 1 unweighted
+    #>   tot.obs     w.name
+    #> 1      41 unweighted
 
 You can even request only the AC<sub>1</sub> coefficient estimate
 0.77544. You will then proceed as follows:

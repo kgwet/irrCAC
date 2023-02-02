@@ -19,6 +19,7 @@ knitr::opts_chunk$set(
 
 ```{r setup}
 library(irrCAC)
+#source("C:\\Users\\GWET-ASUS-14\\Documents\\Cloud Computing\\RpackagesWork\\irrCAC\\R\\agree.coeff2.r")
 ```
 # Installation
 
@@ -31,8 +32,7 @@ The **irrCAC** is an R package that provides several functions for calculating v
 
 The functions included in this package can handle 3 types of input data: (1) the contingency table, (2) the distribution
 of raters by subject and by category, (3) the raw data, which is essentially a plain dataset where each row represents 
-a subject and each column, the ratings associated with one rater. The list of all datasets containined in this package can
-be listed as follows:
+a subject and each column, the ratings associated with one rater. The list of all datasets contained in this package can be listed as follows:
 
 ```{r}
   data(package="irrCAC")
@@ -42,7 +42,7 @@ be listed as follows:
 
 ##  Computing agreement Coefficients from Contingency tables
 
-**cont3x3abstractors** is one of 2 datasets included in this package and that contain rating data from 2 raters organized in the form of a contingency table. The following r script shows how to compute Cohen's kappa, Scott's Pi, Gwet's $\mbox{AC}_1$, Brennan-Prediger, Krippendorff's alpha, and the percent agreement coefficients from this dataset.
+**cont3x3abstractors** is one of 2 datasets included in this package and that contain rating data from 2 raters organized in the form of a contingency table. The following r script shows how to compute Cohen's kappa, Scott's Pi, Gwet's $\mbox{AC}_1$, Brennan-Prediger, Krippendorff's alpha, Bangdiwala's B, and the percent agreement coefficients from this dataset.
 ```{r}
   cont3x3abstractors
   kappa2.table(cont3x3abstractors)
@@ -50,6 +50,7 @@ be listed as follows:
   gwet.ac1.table(cont3x3abstractors)
   bp2.table(cont3x3abstractors)
   krippen2.table(cont3x3abstractors)
+  bangdiwala.table(cont3x3abstractors)
   pa2.table(cont3x3abstractors)
 ```
 Suppose that you only want to obtain Gwet's $\mbox{AC}_1$ coefficient, but don't care about the associated precision measures such as the standard error, confidence intervals or p-values. You can accomplish this as follows:  

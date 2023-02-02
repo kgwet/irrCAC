@@ -41,7 +41,7 @@ be listed as follows:
 
 ##  Computing agreement Coefficients from Contingency tables
 
-**cont3x3abstractors** is one of 2 datasets included in this package and that contain rating data from 2 raters organized in the form of a contingency table. The following r script shows how to compute Cohen's kappa, Scott's Pi, Gwet's $\mbox{AC}_1$, Brennan-Prediger, Krippendorff's alpha, and the percent agreement coefficients from this dataset.
+**cont3x3abstractors** is one of 2 datasets included in this package and that contain rating data from 2 raters organized in the form of a contingency table. The following r script shows how to compute Cohen's kappa, Scott's Pi, Gwet's $\mbox{AC}_1$, Brennan-Prediger, Krippendorff's alpha, Bangdiwala's B, and the percent agreement coefficients from this dataset.
 ```{r}
   cont3x3abstractors
   kappa2.table(cont3x3abstractors)
@@ -49,6 +49,7 @@ be listed as follows:
   gwet.ac1.table(cont3x3abstractors)
   bp2.table(cont3x3abstractors)
   krippen2.table(cont3x3abstractors)
+  bangdiwala.table(cont3x3abstractors)
   pa2.table(cont3x3abstractors)
 ```
 Suppose that you only want to obtain Gwet's $\mbox{AC}_1$ coefficient, but don't care about the associated precision measures such as the standard error, confidence intervals or p-values. You can accomplish this as follows:  
@@ -58,7 +59,7 @@ Suppose that you only want to obtain Gwet's $\mbox{AC}_1$ coefficient, but don't
 Then use the variable ac1 to obtain $\mbox{AC}_1=`r round(ac1,3)`$.
 
 
-Another contingency table included in this package is named **cont3x3abstractors**.  You may use it to experiment with the r functions listed above. If you are interessted in the weighted agreement coefficients, you can find more information in [weighting.html](weighting.html).
+Another contingency table included in this package is named **cont4x4diagnosis**.  You may use it to experiment with the r functions listed above. If you are interested in the weighted agreement coefficients, you can find more information in [weighting.html](weighting.html). Note that Bangdiwala's weighted coefficient is not implemented in this package.
 
 
 ## Computing agreement coefficients from the distribution of raters by subject & category
@@ -119,3 +120,4 @@ ac1$coeff.val
 # References:
 1. Gwet, K.L. (2014, [ISBN:978-0970806284](https://www.amazon.com/Handbook-Inter-Rater-Reliability-Definitive-Measuring/dp/0970806280/)). "*Handbook of Inter-Rater Reliability*," 4th Edition. Advanced Analytics, LLC
 1. Klein, D. (2018) doi:<https://doi.org/10.1177/1536867X1801800408>. "Implementing a general framework for assessing interrater agreement in Stata," *The Stata Journal* Volume 18, Number 4, pp. 871-901.
+1. Shankar, V. and Bangdiwala, S.I. (2014). Observer agreement paradoxes in $2\times2$ tables: Comparison of agreement measures. *BMC Medical Research Methodology*, 14(1). <https://doi.org/10.1186/1471-2288-14-100>.
