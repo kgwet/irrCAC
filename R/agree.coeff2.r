@@ -438,12 +438,9 @@ bangdiwala2RR.fn <- function(fra.ratings.raw,conflev=0.95,N=Inf){
     count(tib.ratings[1],tib.ratings[2]) %>%
     drop_na()
   ratings <- long2wide.fn(fr.data)
-  #ratings <- as.matrix(ratings)
-  if(dim(ratings)[1] != dim(ratings)[2]){
-    stop('The contingency table should have the same number of rows and columns!')
-  }
-  n <- sum(ratings) # number of subjects
-  f <- n/N # finite population correction
+  n <- nrow(tib.ratings) # number of subjects
+  if (n<=N) f <- n/N # finite population correction
+  else f=0
   q <- ncol(ratings) # number of categories
   pk. <- rowSums(ratings)/n
   p.k <- colSums(ratings)/n
@@ -503,7 +500,8 @@ bangdiwala2RR.fn <- function(fra.ratings.raw,conflev=0.95,N=Inf){
 #' q <- nrow(cont3x3abstractors) #Number of categories
 #' pa2.table(cont3x3abstractors,weights = quadratic.weights(1:q)) #Weighted percent agreement
 #' @export
-pa2.table <- function(ratings,weights=identity.weights(1:ncol(ratings)),conflev=0.95,N=Inf){
+pa2.table <- function(ratings,weights=identity.weights(1:ncol(ratings)),
+                      conflev=0.95,N=Inf){
   ratings <- as.matrix(ratings)
   if(dim(ratings)[1] != dim(ratings)[2]){
     stop('The contingency table should have the same number of rows and columns!')
