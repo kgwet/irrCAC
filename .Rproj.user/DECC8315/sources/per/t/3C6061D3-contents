@@ -610,6 +610,7 @@ freq.supp.fn <- function(freq.data,categories.vec){
   freq.data.all <- freq.data
   r1categ <- sort(as.character(unique(na.omit(freq.data[[1]]))))
   r2categ <- sort(as.character(unique(na.omit(freq.data[[2]]))))
+  categories.vec <- sort(as.character(categories.vec))
   if (!identical(categories.vec,r1categ)){
     v1.supp <- setdiff(categories.vec,r1categ)
     n.v2supp<-length(v1.supp)
