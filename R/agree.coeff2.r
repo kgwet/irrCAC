@@ -432,6 +432,11 @@ bangdiwala.table <- function(ratings,conflev=0.95,N=Inf){
 #' 1 Identity
 #' @export
 bangdiwala2RR.fn <- function(fra.ratings.raw,conflev=0.95,N=Inf){
+  if (is.numeric(unlist(fra.ratings.raw))) {
+    nums <- sapply(fra.ratings.raw, is.numeric)
+    fra.ratings.raw[,nums] <- as.data.frame(apply(fra.ratings.raw[,nums],
+                                                  2,as.character))
+  }
   tib.ratings <- fra.ratings.raw
   tib.ratings[tib.ratings==''] <- NA_character_
   fr.data <- tib.ratings %>%
