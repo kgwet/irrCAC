@@ -432,11 +432,11 @@ bangdiwala.table <- function(ratings,conflev=0.95,N=Inf){
 #' 1 Identity
 #' @export
 bangdiwala2RR.fn <- function(fra.ratings.raw,conflev=0.95,N=Inf){
-  if (is.numeric(unlist(fra.ratings.raw))) {
-    nums <- sapply(fra.ratings.raw, is.numeric)
-    fra.ratings.raw[,nums] <- as.data.frame(apply(fra.ratings.raw[,nums],
-                                                  2,as.character))
-  }
+  # if (is.numeric(unlist(fra.ratings.raw))) {
+  #   nums <- sapply(fra.ratings.raw, is.numeric)
+  #   fra.ratings.raw[,nums] <- as.data.frame(apply(fra.ratings.raw[,nums],
+  #                                                 2,as.character))
+  # }
   tib.ratings <- fra.ratings.raw
   tib.ratings[tib.ratings==''] <- NA_character_
   fr.data <- tib.ratings %>%
@@ -571,6 +571,7 @@ long2wide.fn <- function(freqs.long){
   freq.tab <- freqs.long %>%
     drop_na()
   cat.vec <- as.vector(unique(na.omit(c(freqs.long[[1]],freqs.long[[2]]))))
+  cat.vec <- format(cat.vec) #- convert cat.vec to a character vector if needed
   freq.tab1 <-freq.supp.fn(freq.tab,cat.vec)
   freq.tab2 <- as_tibble(freq.tab1[order(freq.tab1[[1]],freq.tab1[[2]]),])
   freq.tab2 <- mutate(freq.tab2,n=as.integer(freq.tab2[[3]]))

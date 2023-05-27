@@ -1,9 +1,5 @@
     library(irrCAC)
-    #> Warning: replacing previous import 'lifecycle::last_warnings' by
-    #> 'rlang::last_warnings' when loading 'pillar'
-    #> Warning: replacing previous import 'lifecycle::last_warnings' by
-    #> 'rlang::last_warnings' when loading 'tibble'
-    source("C:\\Users\\GWET-ASUS-14\\Documents\\Cloud Computing\\RpackagesWork\\irrCAC\\R\\agree.coeff2.r")
+    #source("C:\\Users\\GWET-ASUS-14\\Documents\\Cloud Computing\\RpackagesWork\\irrCAC\\R\\agree.coeff2.r")
 
 # Installation
 
@@ -31,7 +27,7 @@ package can be listed as follows:
 ## Computing agreement Coefficients from Contingency tables
 
 **cont3x3abstractors** is one of 2 datasets included in this package and
-that contain rating data from 2 raters organized in the form of a
+that contains rating data from 2 raters organized in the form of a
 contingency table. The following r script shows how to compute Cohen’s
 kappa, Scott’s Pi, Gwet’s AC<sub>1</sub>, Brennan-Prediger,
 Krippendorff’s alpha, Bangdiwala’s B, and the percent agreement
@@ -104,25 +100,35 @@ and how it can be used to compute the various agreement coefficients:
     #> 14          1                    0             0        5     0
     #> 15          0                    2             0        3     1
     gwet.ac1.dist(distrib.6raters)
+    #> Warning: Returning more (or less) than 1 row per `summarise()` group was deprecated in
+    #> dplyr 1.1.0.
+    #> i Please use `reframe()` instead.
+    #> i When switching from `summarise()` to `reframe()`, remember that `reframe()`
+    #>   always returns an ungrouped data frame and adjust accordingly.
+    #> i The deprecated feature was likely used in the irrCAC package.
+    #>   Please report the issue to the authors.
+    #> This warning is displayed once every 8 hours.
+    #> Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
+    #> generated.
     #>   coeff.name     coeff     stderr      conf.int      p.value        pa
-    #> 1 Gwet's AC1 0.4448007 0.08418757 (0.264,0.625) 0.0001155927 0.5511111
+    #> 1 Gwet's AC1 0.4448007 0.08418757 (0.264,0.625) 5.779637e-05 0.5511111
     #>          pe  n q r.min r.max
     #> 1 0.1914815 15 5     6     6
     fleiss.kappa.dist(distrib.6raters)
     #>      coeff.name     coeff     stderr     conf.int      p.value        pa
-    #> 1 Fleiss' Kappa 0.4139265 0.08119291 (0.24,0.588) 0.0001622724 0.5511111
+    #> 1 Fleiss' Kappa 0.4139265 0.08119291 (0.24,0.588) 8.113618e-05 0.5511111
     #>          pe  n q r.min r.max
     #> 1 0.2340741 15 5     6     6
     krippen.alpha.dist(distrib.6raters)
     #>             coeff.name     coeff     stderr      conf.int      p.value
-    #> 1 Krippendorff's Alpha 0.4204384 0.08243228 (0.244,0.597) 0.0001615721
+    #> 1 Krippendorff's Alpha 0.4204384 0.08243228 (0.244,0.597) 8.078607e-05
     #>          pa        pe  n q r.min r.max
     #> 1 0.5560988 0.2340741 15 5     6     6
     bp.coeff.dist(distrib.6raters)
-    #>         coeff.name     coeff     stderr      conf.int   p.value        pa  pe
-    #> 1 Brennan-Prediger 0.4388889 0.08312142 (0.261,0.617) 0.0001163 0.5511111 0.2
-    #>    n q r.min r.max
-    #> 1 15 5     6     6
+    #>         coeff.name     coeff     stderr      conf.int      p.value        pa
+    #> 1 Brennan-Prediger 0.4388889 0.08312142 (0.261,0.617) 5.814998e-05 0.5511111
+    #>    pe  n q r.min r.max
+    #> 1 0.2 15 5     6     6
 
 Once again, you can request a single value from these functions. To get
 only Krippendorff’s alpha coefficient without it’s precission measures,
@@ -183,7 +189,7 @@ ratings:
     pa.coeff.raw(cac.raw4raters)
     #> $est
     #>          coeff.name        pa pe coeff.val coeff.se  conf.int      p.value
-    #> 1 Percent Agreement 0.8181818  0 0.8181818  0.12561 (0.542,1) 4.345373e-05
+    #> 1 Percent Agreement 0.8181818  0 0.8181818  0.12561 (0.542,1) 2.172686e-05
     #>   tot.obs     w.name
     #> 1      41 unweighted
     #> 
@@ -203,8 +209,8 @@ ratings:
     #> 1      9     10     11     11
     gwet.ac1.raw(cac.raw4raters)
     #> $est
-    #>   coeff.name        pa        pe coeff.val coeff.se  conf.int     p.value
-    #> 1        AC1 0.8181818 0.1903212   0.77544  0.14295 (0.461,1) 0.000208721
+    #>   coeff.name        pa        pe coeff.val coeff.se  conf.int      p.value
+    #> 1        AC1 0.8181818 0.1903212   0.77544  0.14295 (0.461,1) 0.0001043605
     #>   tot.obs     w.name
     #> 1      41 unweighted
     #> 
@@ -224,8 +230,8 @@ ratings:
     #> 1      9     10     11     11
     fleiss.kappa.raw(cac.raw4raters)
     #> $est
-    #>      coeff.name        pa        pe coeff.val coeff.se  conf.int     p.value
-    #> 1 Fleiss' Kappa 0.8181818 0.2387153   0.76117  0.15302 (0.424,1) 0.000419173
+    #>      coeff.name        pa        pe coeff.val coeff.se  conf.int      p.value
+    #> 1 Fleiss' Kappa 0.8181818 0.2387153   0.76117  0.15302 (0.424,1) 0.0002095865
     #>   tot.obs     w.name
     #> 1      41 unweighted
     #> 
@@ -246,7 +252,7 @@ ratings:
     krippen.alpha.raw(cac.raw4raters)
     #> $est
     #>             coeff.name    pa   pe coeff.val coeff.se  conf.int      p.value
-    #> 1 Krippendorff's Alpha 0.805 0.24   0.74342  0.14548 (0.423,1) 0.0003386245
+    #> 1 Krippendorff's Alpha 0.805 0.24   0.74342  0.14548 (0.423,1) 0.0001693123
     #>   tot.obs     w.name
     #> 1      41 unweighted
     #> 
@@ -267,7 +273,7 @@ ratings:
     conger.kappa.raw(cac.raw4raters)
     #> $est
     #>       coeff.name        pa        pe coeff.val coeff.se  conf.int      p.value
-    #> 1 Conger's Kappa 0.8181818 0.2334252   0.76282  0.14917 (0.435,1) 0.0003367066
+    #> 1 Conger's Kappa 0.8181818 0.2334252   0.76282  0.14917 (0.435,1) 0.0001683533
     #>   tot.obs     w.name
     #> 1      41 unweighted
     #> 
@@ -288,7 +294,7 @@ ratings:
     bp.coeff.raw(cac.raw4raters)
     #> $est
     #>         coeff.name        pa  pe coeff.val coeff.se  conf.int      p.value
-    #> 1 Brennan-Prediger 0.8181818 0.2   0.77273  0.14472 (0.454,1) 0.0002375609
+    #> 1 Brennan-Prediger 0.8181818 0.2   0.77273  0.14472 (0.454,1) 0.0001187804
     #>   tot.obs     w.name
     #> 1      41 unweighted
     #> 
@@ -315,8 +321,8 @@ experiment with the other coefficients):
 
     ac1 <- gwet.ac1.raw(cac.raw4raters)$est
     ac1
-    #>   coeff.name        pa        pe coeff.val coeff.se  conf.int     p.value
-    #> 1        AC1 0.8181818 0.1903212   0.77544  0.14295 (0.461,1) 0.000208721
+    #>   coeff.name        pa        pe coeff.val coeff.se  conf.int      p.value
+    #> 1        AC1 0.8181818 0.1903212   0.77544  0.14295 (0.461,1) 0.0001043605
     #>   tot.obs     w.name
     #> 1      41 unweighted
 

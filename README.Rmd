@@ -42,7 +42,7 @@ a subject and each column, the ratings associated with one rater. The list of al
 
 ##  Computing agreement Coefficients from Contingency tables
 
-**cont3x3abstractors** is one of 2 datasets included in this package and that contain rating data from 2 raters organized in the form of a contingency table. The following r script shows how to compute Cohen's kappa, Scott's Pi, Gwet's $\mbox{AC}_1$, Brennan-Prediger, Krippendorff's alpha, Bangdiwala's B, and the percent agreement coefficients from this dataset.
+**cont3x3abstractors** is one of 2 datasets included in this package and that contains rating data from 2 raters organized in the form of a contingency table. The following r script shows how to compute Cohen's kappa, Scott's Pi, Gwet's $\mbox{AC}_1$, Brennan-Prediger, Krippendorff's alpha, Bangdiwala's B, and the percent agreement coefficients from this dataset.
 ```{r}
   cont3x3abstractors
   kappa2.table(cont3x3abstractors)

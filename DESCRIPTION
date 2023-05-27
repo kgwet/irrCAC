@@ -1,13 +1,14 @@
 Package: irrCAC
 Author: Kilem L. Gwet, Ph.D.
-Version: 1.2
-Date: 2021-08-28
+Version: 1.3
+Date: 2023-05-27
 Maintainer: Kilem L. Gwet <gwet@agreestat.com>
 Title: Computing the Extent of Agreement among Raters with Chance-Corrected Agreement Coefficient (CAC)
 Description: This package contains a series of R functions for calculating various chance-corrected agreement 
   coefficients (CAC) among 2 or more raters. Among the CAC coefficients covered are Cohen's kappa, Conger's kappa,
   Fleiss' kappa, Brennan-Prediger coefficient, Gwet's AC1/AC2 coefficients, and Krippendorff's alpha. Multiple
-  sets of weights are proposed for computing weighted analyses.
+  sets of weights are proposed for computing weighted analyses. Also included in this package is Bangdiwala's B
+  coefficient.
 License: GPL (>=2)
 Encoding: UTF-8
 LazyData: true
