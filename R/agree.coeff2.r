@@ -571,7 +571,7 @@ long2wide.fn <- function(freqs.long){
   freq.tab <- freqs.long %>%
     drop_na()
   cat.vec <- as.vector(unique(na.omit(c(freqs.long[[1]],freqs.long[[2]]))))
-  cat.vec <- format(cat.vec) #- convert cat.vec to a character vector if needed
+  cat.vec <- str_trim(format(cat.vec)) #- convert cat.vec to a character vector if needed
   freq.tab1 <-freq.supp.fn(freq.tab,cat.vec)
   freq.tab2 <- as_tibble(freq.tab1[order(freq.tab1[[1]],freq.tab1[[2]]),])
   freq.tab2 <- mutate(freq.tab2,n=as.integer(freq.tab2[[3]]))
@@ -620,14 +620,14 @@ freq.supp.fn <- function(freq.data,categories.vec){
   if (!identical(categories.vec,r1categ)){
     v1.supp <- setdiff(categories.vec,r1categ)
     n.v2supp<-length(v1.supp)
-    freq.v1 <- cbind(v1.supp,r2categ[1:n.v2supp],rep(0,n.v2supp))
+    freq.v1 <- as.data.frame(cbind(v1.supp,r2categ[1:n.v2supp],rep(0,n.v2supp)))
     freq.v1 <- setNames(as_tibble(freq.v1),cnames)
     freq.v1[[3]] <- as.integer(as.character(freq.v1[[3]]))
   }
   if (!identical(categories.vec,r2categ)){
     v2.supp <- setdiff(categories.vec,r2categ)
     n.v3supp <- length(v2.supp)
-    freq.v2 <- cbind(r1categ[1:n.v3supp],v2.supp,rep(0,n.v3supp))
+    freq.v2 <- as.data.frame(cbind(r1categ[1:n.v3supp],v2.supp,rep(0,n.v3supp)))
     freq.v2 <- setNames(as_tibble(freq.v2),cnames)
     freq.v2[[3]] <- as.integer(as.character(freq.v2[[3]]))
   }
