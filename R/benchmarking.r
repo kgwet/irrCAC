@@ -7,7 +7,7 @@
 #'    is a small file contained in the package and named \emph{altman.RData}, which describes the official Altman's 
 #'    scale intervals and their interpretation. 
 #' @importFrom stats na.omit pnorm
-#' @return A one-column matrix containing the membership probabilities (c.f. \url{http://agreestat.com/research_papers/inter-rater\%20reliability\%20study\%20design1.pdf}) 
+#' @return A one-column matrix containing the membership probabilities (c.f. \url{https://agreestat.com/papers/inter-rater\%20reliability\%20study\%20design1.pdf}) 
 #' @export
 altman.bf <- function(coeff,se,BenchDF=altman){
   n <- nrow(BenchDF)
@@ -31,11 +31,11 @@ altman.bf <- function(coeff,se,BenchDF=altman){
 #' Computing Landis-Koch Benchmark Scale Membership Probabilities 
 #' @param coeff A mandatory parameter representing the estimated value of an agreement coefficient.
 #' @param se A mandatory parameter representing the agreement coefficient standard error. 
-#' @param BenchDF An optional parameter that is a 3-column data frame containing the Landis \& Koch's benchmark scale 
+#' @param BenchDF An optional parameter that is a 3-column data frame containing the Landis & Koch's benchmark scale 
 #'    information. The 3 columns are the interval lower bound, upper bound, and their interpretation. The default value 
 #'    is a small file contained in the package and named \emph{landis.koch.RData}, which describes the official 
-#'    Landis \& Koch's scale intervals and their interpretation.
-#' @return A one-column matrix containing the membership probabilities (c.f. \url{http://agreestat.com/research_papers/inter-rater\%20reliability\%20study\%20design1.pdf}) 
+#'    Landis & Koch's scale intervals and their interpretation.
+#' @return A one-column matrix containing the membership probabilities (c.f. \url{https://agreestat.com/papers/inter-rater\%20reliability\%20study\%20design1.pdf}) 
 #' @export
 landis.koch.bf <- function(coeff,se,BenchDF=landis.koch){
   n <- nrow(BenchDF)
@@ -63,7 +63,7 @@ landis.koch.bf <- function(coeff,se,BenchDF=landis.koch){
 #'    The 3 columns are the interval lower bound, upper bound, and their interpretation. The default value is a small 
 #'    file contained in the package and named \emph{fleiss.RData}, which describes the fleiss' scale intervales and their
 #'    interpretation. 
-#' @return A one-column matrix containing the membership probabilities (c.f. \url{http://agreestat.com/research_papers/inter-rater\%20reliability\%20study\%20design1.pdf}) 
+#' @return A one-column matrix containing the membership probabilities (c.f. \url{https://agreestat.com/papers/inter-rater\%20reliability\%20study\%20design1.pdf}) 
 #' @export
 fleiss.bf <- function(coeff,se,BenchDF=fleiss){
   n <- nrow(BenchDF)

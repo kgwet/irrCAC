@@ -67,7 +67,6 @@ gwet.ac1.dist <- function(ratings,weights="unweighted",categ=NULL,conflev=0.95,N
         colnames(agree.mat) <- c(colna1,colna2)
         q <- q2
       } 
-      
     }
   if (is.character(weights)){
     w.name <- weights
@@ -118,8 +117,8 @@ gwet.ac1.dist <- function(ratings,weights="unweighted",categ=NULL,conflev=0.95,N
   if (sum(weights.mat)==q) coeff.name <-"Gwet's AC1"
   else coeff.name <-"Gwet's AC2"
   
-  r.min <- dplyr::summarise(as.data.frame(agree.mat),ri=rowSums(across(1:q)))%>%min()
-  r.max <- dplyr::summarise(as.data.frame(agree.mat),ri=rowSums(across(1:q)))%>%max()
+  r.min <- dplyr::reframe(as.data.frame(agree.mat),ri=rowSums(across(1:q)))%>%min()
+  r.max <- dplyr::reframe(as.data.frame(agree.mat),ri=rowSums(across(1:q)))%>%max()
   df.out <- data.frame(coeff.name,coeff,stderr,conf.int,
                        p.value,pa,pe,n,q,r.min,r.max)  
   return(df.out)
@@ -234,8 +233,8 @@ fleiss.kappa.dist <- function(ratings,weights="unweighted",categ=NULL,conflev=0.
   conf.int <- paste0("(",round(lcb,3),",",round(ucb,3),")")
   coeff <- fleiss.kappa
   coeff.name <- "Fleiss' Kappa"
-  r.min <- dplyr::summarise(as.data.frame(agree.mat),ri=rowSums(across(1:q)))%>%min()
-  r.max <- dplyr::summarise(as.data.frame(agree.mat),ri=rowSums(across(1:q)))%>%max()
+  r.min <- dplyr::reframe(as.data.frame(agree.mat),ri=rowSums(across(1:q)))%>%min()
+  r.max <- dplyr::reframe(as.data.frame(agree.mat),ri=rowSums(across(1:q)))%>%max()
   df.out <- data.frame(coeff.name,coeff,stderr,conf.int,
                        p.value,pa,pe,n,q,r.min,r.max)
   return(df.out)
@@ -365,8 +364,8 @@ krippen.alpha.dist <- function(ratings,weights="unweighted",categ=NULL,conflev=0
   coeff <- krippen.alpha
   coeff.name <-"Krippendorff's Alpha"
   
-  r.min <- dplyr::summarise(as.data.frame(agree.mat),ri=rowSums(across(1:q)))%>%min()
-  r.max <- dplyr::summarise(as.data.frame(agree.mat),ri=rowSums(across(1:q)))%>%max()
+  r.min <- dplyr::reframe(as.data.frame(agree.mat),ri=rowSums(across(1:q)))%>%min()
+  r.max <- dplyr::reframe(as.data.frame(agree.mat),ri=rowSums(across(1:q)))%>%max()
   df.out <- data.frame(coeff.name,coeff,stderr,conf.int,
                        p.value,pa,pe,n,q,r.min,r.max)
   return(df.out)
@@ -476,8 +475,8 @@ bp.coeff.dist <- function(ratings,weights="unweighted",categ=NULL,conflev=0.95,N
   coeff <- bp.coeff
   coeff.name <- "Brennan-Prediger"
   
-  r.min <- dplyr::summarise(as.data.frame(agree.mat),ri=rowSums(across(1:q)))%>%min()
-  r.max <- dplyr::summarise(as.data.frame(agree.mat),ri=rowSums(across(1:q)))%>%max()
+  r.min <- dplyr::reframe(as.data.frame(agree.mat),ri=rowSums(across(1:q)))%>%min()
+  r.max <- dplyr::reframe(as.data.frame(agree.mat),ri=rowSums(across(1:q)))%>%max()
   df.out <- data.frame(coeff.name,coeff,stderr,conf.int,
                        p.value,pa,pe,n,q,r.min,r.max)
   return(df.out)
@@ -568,8 +567,8 @@ pa.coeff.dist <- function(ratings,weights="unweighted",categ=NULL,conflev=0.95,N
   pe <-0
   coeff <- pa
   coeff.name <- "Percent agreement"
-  r.min <- dplyr::summarise(as.data.frame(agree.mat),ri=rowSums(across(1:q)))%>%min()
-  r.max <- dplyr::summarise(as.data.frame(agree.mat),ri=rowSums(across(1:q)))%>%max()
+  r.min <- dplyr::reframe(as.data.frame(agree.mat),ri=rowSums(across(1:q)))%>%min()
+  r.max <- dplyr::reframe(as.data.frame(agree.mat),ri=rowSums(across(1:q)))%>%max()
   df.out <- data.frame(coeff.name,coeff,stderr,conf.int,
                        p.value,pa,pe,n,q,r.min,r.max)
   return(df.out)

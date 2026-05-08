@@ -353,21 +353,20 @@ krippen2.table <- function(ratings,weights=identity.weights(1:ncol(ratings)),con
 
 
 
-#bangdiwala.fn: Bangdiwala's B coefficient (see Shankar & Bangdiwala, 2014) and its standard error for 2 raters when input dataset is a contingency table
+#bangdiwala.table: Bangdiwala's B coefficient (see Shankar & Bangdiwala, 2014) and its standard error for 2 raters when input dataset is a contingency table
 #-------------
 #The input data "ratings" is a qxq contingency table showing the distribution of
 #subjects by rater, when q is the number of categories.
 #======================================================================================
 #' Bangdiwala B coefficient for 2 raters
 #' @param ratings A square table of ratings (assume no missing ratings).
-#' @param weights An optional matrix that contains the weights used in the weighted analysis. By default, this parameter contaings the identity weight matrix, which leads to the unweighted analysis.
 #' @param conflev An optional parameter that specifies the confidence level used for constructing confidence intervals. By default the function assumes the standard value of 95\%.
 #' @param N An optional parameter representing the finite population size if any. It is used to perform the finite population correction to the standard error. It's default value is infinity. 
 #' @return A data frame containing the following 5 variables: coeff.name coeff.val coeff.se coeff.ci coeff.pval.
 #' @examples 
 #' #The dataset "cont3x3abstractors" comes with this package. Analyze it as follows:
-#' bangdiwala.fn(cont3x3abstractors) #Yields Scott's Pi coefficient along with precision measures
-#' Bcoeff <- bangdiwala.fn(cont3x3abstractors)$coeff.val #Yields Scott's coefficient alone.
+#' bangdiwala.table(cont3x3abstractors) #Yields Bangdiwala coefficient along with precision measures
+#' Bcoeff <- bangdiwala.table(cont3x3abstractors)$coeff.val #Yields Bangdiwala's coefficient alone.
 #' Bcoeff
 #' q <- nrow(cont3x3abstractors) #Number of categories
 #' @export
@@ -420,16 +419,22 @@ bangdiwala.table <- function(ratings,conflev=0.95,N=Inf){
 #' @param fra.ratings.raw A dataframe with 2 columns of raw ratings.
 #' @param conflev An optional parameter that specifies the confidence level used for constructing confidence intervals. By default the function assumes the standard value of 95\%.
 #' @param N An optional parameter representing the finite population size if any. It is used to perform the finite population correction to the standard error. It's default value is infinity. 
+#' @importFrom stats setNames
+#' @importFrom tidyr drop_na pivot_wider
+#' @importFrom dplyr count mutate select all_of
+#' @importFrom stringr str_trim
+#' @importFrom tibble as_tibble
 #' @return A data frame containing the following 9 variables: coeff.name, b1, b2, 
 #' coeff.val, coeff.se, conf.int, p.value, n and name of the weight used.
 #' @examples 
-#' The dataset cac.ben.gerry comes with this package. Analyze it as follows:
-#' bangdiwala2RR.fn(cac.ben.gerry[,c(3,4)]), using only the last 2 columns.
-#' The result will be following:
-#' coeff.name        pa        pe coeff.val  coeff.se  conf.int     p.val tot.obs
-#' 1 Bangdiwala''s B 0.1322314 0.2066116      0.64 0.2158518 (0.159,1) 7.083e-03      11
-#' w.name
-#' 1 Identity
+#' #The dataset cac.ben.gerry comes with this package. Analyze it as follows:
+#' bangdi <- bangdiwala2RR.fn(cac.ben.gerry[,c(3,4)]) #using only the last 2 columns.
+#' #The result will be following:
+#' c(bangdi$coeff.name,bangdi$pa,bangdi$pe,bangdi$coeff.val,bangdi$coeff.se,
+#'   bangdi$conf.int,bangdi$p.val,bangdi$tot.obs)
+#' #1 Bangdiwala''s B 0.1322314 0.2066116      0.64 0.2158518 (0.159,1) 7.083e-03      11
+#' bangdi$w.name
+#' #1 Identity
 #' @export
 bangdiwala2RR.fn <- function(fra.ratings.raw,conflev=0.95,N=Inf){
   # if (is.numeric(unlist(fra.ratings.raw))) {
@@ -552,19 +557,24 @@ pa2.table <- function(ratings,weights=identity.weights(1:ncol(ratings)),
 #' that both raters have actually used when classifying the subjects. The third and last 
 #' variable is generally named "n" and represents the count of subjects that classified into
 #' the 2 associated categories by both raters.
+#' @importFrom tidyr drop_na pivot_wider
+#' @importFrom dplyr count n mutate select all_of
+#' @importFrom stringr str_trim
+#' @importFrom tibble as_tibble
+#' @importFrom stats setNames
 #' @return A matrix that represents a contingency showing the distribution of subjects by
 #' rater and category.
 #' @examples 
 #' #The dataset "freqs.data" comes with this package. Analyze it as follows:
 #' long2wide.fn(freqs.data) #Yields a 5x5 matrix
-#' This will produce the following 5x5 matrix:
-#' > long2wide.fn(freqs.data)
-#' a b c d e
-#' a 0 1 0 1 0
-#' b 0 2 0 0 0
-#' c 0 0 3 0 0
-#' d 0 1 0 1 0
-#' e 0 0 0 0 1
+#' #This will produce the following 5x5 matrix:
+#' #> long2wide.fn(freqs.data)
+#' #a b c d e
+#' #a 0 1 0 1 0
+#' #b 0 2 0 0 0
+#' #c 0 0 3 0 0
+#' #d 0 1 0 1 0
+#' #e 0 0 0 0 1
 #' @export
 long2wide.fn <- function(freqs.long){
   if (is.character(as.matrix(freqs.long))) freqs.long[freqs.long==""] <- NA
@@ -597,17 +607,17 @@ long2wide.fn <- function(freqs.long){
 #' @examples 
 #' #The dataset "freqs.data" comes with this package. Analyze it as follows:
 #' freq.supp.fn(freqs.data) 
-#' Executing this command will yield the following data frame:
-#'   Ben   Gerry n
-#' <chr> <chr> <chr>
-#'   a     b     1    
-#'   a     d     1
-#'   b     b     2    
-#'   c     c     3    
-#'   d     b     1    
-#'   d     d     1    
-#'   e     e     1    
-#'   a     a     0
+#' #Executing this command will yield the following data frame:
+#' #  Ben   Gerry n
+#' # <chr> <chr> <chr>
+#' #   a     b     1    
+#' #   a     d     1
+#' #   b     b     2    
+#' #   c     c     3    
+#' #   d     b     1    
+#' #   d     d     1    
+#' #   e     e     1    
+#' #   a     a     0
 #' @export
 freq.supp.fn <- function(freq.data,categories.vec){
   cnames <- colnames(freq.data)
@@ -616,7 +626,8 @@ freq.supp.fn <- function(freq.data,categories.vec){
   freq.data.all <- freq.data
   r1categ <- sort(as.character(unique(na.omit(freq.data[[1]]))))
   r2categ <- sort(as.character(unique(na.omit(freq.data[[2]]))))
-  categories.vec <- sort(as.character(categories.vec))
+  if (missing(categories.vec)) categories.vec<-""
+  else categories.vec <- sort(as.character(categories.vec))
   if (!identical(categories.vec,r1categ)){
     v1.supp <- setdiff(categories.vec,r1categ)
     n.v2supp<-length(v1.supp)

@@ -54,5 +54,5 @@ fleiss
 fleiss.kappa.raw(cac.raw4raters, weights = "quadratic") #weighted Fleiss' kappa/quadratic wts
 }
 \references{
-Fleiss, J. L. (1981). \emph{Statistical Methods for Rates and Proportions}. John Wiley \& Sons.
+Fleiss, J. L. (1981). \emph{Statistical Methods for Rates and Proportions}. John Wiley & Sons.
 }

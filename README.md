@@ -335,9 +335,7 @@ You can even request only the AC<sub>1</sub> coefficient estimate
 
 # References:
 
-1.  Gwet, K.L. (2014,
-    [ISBN:978-0970806284](https://www.amazon.com/Handbook-Inter-Rater-Reliability-Definitive-Measuring/dp/0970806280/)).
-    “*Handbook of Inter-Rater Reliability*,” 4th Edition. Advanced
+1.  Gwet, K.L. (2014). ``*Handbook of Inter-Rater Reliability*,'' 4th Edition. Advanced
     Analytics, LLC
 2.  Klein, D. (2018) doi:<https://doi.org/10.1177/1536867X1801800408>.
     “Implementing a general framework for assessing interrater agreement

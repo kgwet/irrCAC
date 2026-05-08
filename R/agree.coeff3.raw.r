@@ -314,7 +314,7 @@ gwet.ac1.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conflev=
 #' fleiss <- fleiss.kappa.raw(cac.raw4raters)$est$coeff.val #Yields Fleiss' kappa alone.
 #' fleiss
 #' fleiss.kappa.raw(cac.raw4raters, weights = "quadratic") #weighted Fleiss' kappa/quadratic wts
-#' @references Fleiss, J. L. (1981). \emph{Statistical Methods for Rates and Proportions}. John Wiley \& Sons.
+#' @references Fleiss, J. L. (1981). \emph{Statistical Methods for Rates and Proportions}. John Wiley & Sons.
 #' @export
 fleiss.kappa.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conflev=0.95,N=Inf){ 
   ratings.mat <- as.matrix(ratings) 
@@ -727,7 +727,7 @@ conger.kappa.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conf
 #Brennan, R.L., and Prediger, D. J. (1981). ``Coefficient Kappa: some uses, misuses, and alternatives."
 #           Educational and Psychological Measurement, 41, 687-699.
 #======================================================================================
-#' Brennan \& Prediger's (BP) agreement coefficient for an arbitrary number of raters (2, 3, +) when the input data represent the raw ratings reported for each subject and each rater.
+#' Brennan & Prediger's (BP) agreement coefficient for an arbitrary number of raters (2, 3, +) when the input data represent the raw ratings reported for each subject and each rater.
 #' @param ratings An nxr matrix / data frame of ratings where each column represents one rater and each row one subject.
 #' @param weights is a mandatory parameter that is either a string variable or a matrix. 
 #' The string describes one of the predefined weights and must take one of the values 
@@ -758,7 +758,7 @@ conger.kappa.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conf
 #' bp <- bp.coeff.raw(cac.raw4raters)$est$coeff.val #Yields Brennan-Prediger coefficient alone.
 #' bp
 #' bp.coeff.raw(cac.raw4raters, weights = "quadratic") #weighted Brennan-Prediger coefficient
-#' @references Brennan, R.L., \& Prediger, D. J. (1981). ``Coefficient Kappa: some uses, misuses, and alternatives." \emph{Educational and Psychological Measurement}, 41, 687-699.
+#' @references Brennan, R.L., & Prediger, D. J. (1981). ``Coefficient Kappa: some uses, misuses, and alternatives." \emph{Educational and Psychological Measurement}, 41, 687-699.
 #' @export
 bp.coeff.raw <- function(ratings,weights="unweighted",categ.labels=NULL,conflev=0.95,N=Inf){ 
   ratings.mat <- as.matrix(ratings) 

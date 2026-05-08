@@ -24,12 +24,12 @@ matrix or a contingency table. This function uses the freq.supp.fn() function.
 \examples{
 #The dataset "freqs.data" comes with this package. Analyze it as follows:
 long2wide.fn(freqs.data) #Yields a 5x5 matrix
-This will produce the following 5x5 matrix:
-> long2wide.fn(freqs.data)
-a b c d e
-a 0 1 0 1 0
-b 0 2 0 0 0
-c 0 0 3 0 0
-d 0 1 0 1 0
-e 0 0 0 0 1
+#This will produce the following 5x5 matrix:
+#> long2wide.fn(freqs.data)
+#a b c d e
+#a 0 1 0 1 0
+#b 0 2 0 0 0
+#c 0 0 3 0 0
+#d 0 1 0 1 0
+#e 0 0 0 0 1
 }

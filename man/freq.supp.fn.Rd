@@ -31,15 +31,15 @@ occurrence of 0.
 \examples{
 #The dataset "freqs.data" comes with this package. Analyze it as follows:
 freq.supp.fn(freqs.data) 
-Executing this command will yield the following data frame:
-  Ben   Gerry n
-<chr> <chr> <chr>
-  a     b     1    
-  a     d     1
-  b     b     2    
-  c     c     3    
-  d     b     1    
-  d     d     1    
-  e     e     1    
-  a     a     0
+#Executing this command will yield the following data frame:
+#  Ben   Gerry n
+# <chr> <chr> <chr>
+#   a     b     1    
+#   a     d     1
+#   b     b     2    
+#   c     c     3    
+#   d     b     1    
+#   d     d     1    
+#   e     e     1    
+#   a     a     0
 }

@@ -11,13 +11,13 @@ landis.koch.bf(coeff, se, BenchDF = landis.koch)
 
 \item{se}{A mandatory parameter representing the agreement coefficient standard error.}
 
-\item{BenchDF}{An optional parameter that is a 3-column data frame containing the Landis \& Koch's benchmark scale 
+\item{BenchDF}{An optional parameter that is a 3-column data frame containing the Landis & Koch's benchmark scale 
 information. The 3 columns are the interval lower bound, upper bound, and their interpretation. The default value 
 is a small file contained in the package and named \emph{landis.koch.RData}, which describes the official 
-Landis \& Koch's scale intervals and their interpretation.}
+Landis & Koch's scale intervals and their interpretation.}
 }
 \value{
-A one-column matrix containing the membership probabilities (c.f. \url{http://agreestat.com/research_papers/inter-rater\%20reliability\%20study\%20design1.pdf})
+A one-column matrix containing the membership probabilities (c.f. \url{https://agreestat.com/papers/inter-rater\%20reliability\%20study\%20design1.pdf})
 }
 \description{
 Computing Landis-Koch Benchmark Scale Membership Probabilities

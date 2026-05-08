@@ -17,7 +17,7 @@ file contained in the package and named \emph{fleiss.RData}, which describes the
 interpretation.}
 }
 \value{
-A one-column matrix containing the membership probabilities (c.f. \url{http://agreestat.com/research_papers/inter-rater\%20reliability\%20study\%20design1.pdf})
+A one-column matrix containing the membership probabilities (c.f. \url{https://agreestat.com/papers/inter-rater\%20reliability\%20study\%20design1.pdf})
 }
 \description{
 Computing Fleiss Benchmark Scale Membership Probabilities

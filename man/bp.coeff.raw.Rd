@@ -2,7 +2,7 @@
 % Please edit documentation in R/agree.coeff3.raw.r
 \name{bp.coeff.raw}
 \alias{bp.coeff.raw}
-\title{Brennan \& Prediger's (BP) agreement coefficient for an arbitrary number of raters (2, 3, +) when the input data represent the raw ratings reported for each subject and each rater.}
+\title{Brennan & Prediger's (BP) agreement coefficient for an arbitrary number of raters (2, 3, +) when the input data represent the raw ratings reported for each subject and each rater.}
 \usage{
 bp.coeff.raw(
   ratings,
@@ -43,7 +43,7 @@ agreement), coeff.val (Brennan-Prediger coefficient estimate), "coeff.se" (stand
 "p.value"(Brennan-Prediger coefficient's p-value), "w.name"(the weights' identification).
 }
 \description{
-Brennan \& Prediger's (BP) agreement coefficient for an arbitrary number of raters (2, 3, +) when the input data represent the raw ratings reported for each subject and each rater.
+Brennan & Prediger's (BP) agreement coefficient for an arbitrary number of raters (2, 3, +) when the input data represent the raw ratings reported for each subject and each rater.
 }
 \examples{
 #The dataset "cac.raw4raters" comes with this package. Analyze it as follows:
@@ -55,5 +55,5 @@ bp
 bp.coeff.raw(cac.raw4raters, weights = "quadratic") #weighted Brennan-Prediger coefficient
 }
 \references{
-Brennan, R.L., \& Prediger, D. J. (1981). ``Coefficient Kappa: some uses, misuses, and alternatives." \emph{Educational and Psychological Measurement}, 41, 687-699.
+Brennan, R.L., & Prediger, D. J. (1981). ``Coefficient Kappa: some uses, misuses, and alternatives." \emph{Educational and Psychological Measurement}, 41, 687-699.
 }

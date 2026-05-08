@@ -21,11 +21,12 @@ coeff.val, coeff.se, conf.int, p.value, n and name of the weight used.
 Bangdiwala B coefficient for 2 raters when input dataset is made up of 2 columns of raw data.
 }
 \examples{
-The dataset cac.ben.gerry comes with this package. Analyze it as follows:
-bangdiwala2RR.fn(cac.ben.gerry[,c(3,4)]), using only the last 2 columns.
-The result will be following:
-coeff.name        pa        pe coeff.val  coeff.se  conf.int     p.val tot.obs
-1 Bangdiwala''s B 0.1322314 0.2066116      0.64 0.2158518 (0.159,1) 7.083e-03      11
-w.name
-1 Identity
+#The dataset cac.ben.gerry comes with this package. Analyze it as follows:
+bangdi <- bangdiwala2RR.fn(cac.ben.gerry[,c(3,4)]) #using only the last 2 columns.
+#The result will be following:
+c(bangdi$coeff.name,bangdi$pa,bangdi$pe,bangdi$coeff.val,bangdi$coeff.se,
+  bangdi$conf.int,bangdi$p.val,bangdi$tot.obs)
+#1 Bangdiwala''s B 0.1322314 0.2066116      0.64 0.2158518 (0.159,1) 7.083e-03      11
+bangdi$w.name
+#1 Identity
 }
